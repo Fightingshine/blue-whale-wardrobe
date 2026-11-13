@@ -60,18 +60,20 @@ test('通过选题点选完成投稿并生成安全的GitHub草稿', async ({ pa
   await dialog.getByLabel('作者署名').fill('共创测试');
   await dialog.getByLabel('触发关键词').fill('学院风、校园装');
 
-  // 点选设计说明主题与细节
+  // 点选设计说明主题与细节（选填）
   await dialog.getByRole('button', { name: '学院制服' }).click();
   await expect(dialog.getByRole('button', { name: '学院制服' })).toHaveAttribute('aria-pressed', 'true');
   await dialog.getByLabel(/补充配色或细节想法/u).fill('深蓝水手服搭配白百褶裙。');
 
-  // 点选素材来源卡片与开放使用范围
+  // 点选素材来源卡片与开放使用范围（选填，且支持再次点击取消）
   const originalCard = dialog.getByRole('radio', { name: /原创绘制/u });
   await originalCard.click();
   await expect(originalCard).toHaveAttribute('aria-checked', 'true');
-  await expect(dialog.getByRole('button', { name: '在衣橱图鉴公开展示' })).toHaveAttribute('aria-pressed', 'true');
+  const scopeChip = dialog.getByRole('button', { name: '在衣橱图鉴公开展示' });
+  await scopeChip.click();
+  await expect(scopeChip).toHaveAttribute('aria-pressed', 'true');
 
-  await dialog.getByRole('checkbox', { name: /我确认来源和使用范围填写无误/u }).check();
+  await dialog.getByRole('checkbox', { name: /我同意将这套三视图公开投稿至 GitHub/u }).check();
   await dialog.getByRole('button', { name: '去 GitHub 附图投稿', exact: true }).click();
 
   const urls = await page.evaluate(() => window.__issues);
@@ -91,6 +93,28 @@ test('通过选题点选完成投稿并生成安全的GitHub草稿', async ({ pa
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
   await expect(page.getByText(/三视图排版示范/u)).toBeVisible();
+});
+
+test('设计说明和素材来源留空不选也能顺利提交', async ({ page }) => {
+  await page.addInitScript(() => {
+    window.__issues = [];
+    window.open = url => {
+      window.__issues.push(url);
+      return null;
+    };
+  });
+  await page.reload();
+  await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
+  await dialog.getByLabel('选择三视图图片').setInputFiles(reference);
+  await dialog.getByLabel('皮肤名称').fill('水手大肥鱼');
+  await dialog.getByLabel('作者署名').fill('省心同学');
+  await dialog.getByLabel('触发关键词').fill('水手装');
+  await dialog.getByRole('checkbox', { name: /我同意将这套三视图公开投稿至 GitHub/u }).check();
+  await dialog.getByRole('button', { name: '去 GitHub 附图投稿', exact: true }).click();
+  const urls = await page.evaluate(() => window.__issues);
+  expect(urls).toHaveLength(1);
+  expect(new URL(urls[0]).searchParams.get('body')).toContain('未额外填写');
 });
 
 test('拒绝SVG与损坏文件', async ({ page }) => {

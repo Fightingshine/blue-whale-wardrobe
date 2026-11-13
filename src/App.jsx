@@ -100,10 +100,10 @@ const emptyForm = {
   author: '',
   keywords: '',
   designStyles: [],
-  designDetails: ['hair', 'ears-tail'],
+  designDetails: [],
   description: '',
   sourceType: '',
-  usageScopes: ['gallery', 'bot'],
+  usageScopes: [],
   sourceNote: '',
   rotation: true,
   confirmed: false,
@@ -252,7 +252,7 @@ function Submission({ onClose, template, onCopy }) {
           </label>
 
           <fieldset className="topic-section">
-            <legend>设计说明 <span>*</span> <em className="legend-hint">点选主题即可快速生成</em></legend>
+            <legend>设计说明 <span className="optional-pill">选填</span> <em className="legend-hint">点选标签或简单记一句</em></legend>
             <div className="topic-sub">
               <span className="topic-label">服装风格 / 灵感方向</span>
               <div className="chip-group" role="group" aria-label="服装风格主题">
@@ -303,7 +303,7 @@ function Submission({ onClose, template, onCopy }) {
           </fieldset>
 
           <fieldset className="topic-section">
-            <legend>素材来源与使用范围 <span>*</span> <em className="legend-hint">点选更省心</em></legend>
+            <legend>素材来源与使用范围 <span className="optional-pill">选填</span> <em className="legend-hint">方便后续标注署名与参考方式</em></legend>
             <div className="source-grid" role="radiogroup" aria-label="素材来源类型">
               {SOURCE_TYPE_OPTIONS.map(option => {
                 const active = form.sourceType === option.id;
@@ -314,7 +314,7 @@ function Submission({ onClose, template, onCopy }) {
                     role="radio"
                     aria-checked={active}
                     className={`source-card ${active ? 'active' : ''}`}
-                    onClick={() => { setForm(prev => ({ ...prev, sourceType: option.id })); setError(''); }}
+                    onClick={() => { setForm(prev => ({ ...prev, sourceType: prev.sourceType === option.id ? '' : option.id })); setError(''); }}
                   >
                     <span className="source-radio" aria-hidden="true" />
                     <div>
@@ -360,7 +360,7 @@ function Submission({ onClose, template, onCopy }) {
             </label>
             <label className="check-label">
               <input type="checkbox" checked={form.confirmed} onChange={e => { setForm(prev => ({ ...prev, confirmed: e.target.checked })); setError(''); }} />
-              <span>我确认来源和使用范围填写无误，同意在 GitHub 公开投稿这套三视图</span>
+              <span>我同意将这套三视图公开投稿至 GitHub，并会在跳转页附上原图</span>
             </label>
           </div>
         </div>
@@ -412,8 +412,8 @@ function Guide({ onClose, onContribute, template }) {
         <p>建议白底、全身、三面等高；衣服配色和饰品位置在正面、侧面、背面尽量保持一致，小鞋子和鲸尾也要完整露出来哦。</p>
       </section>
       <section>
-        <h3>选好来源与范围</h3>
-        <p>填写你常展示的昵称，点选原创、改绘或 AI 辅助等创作来源和开放范围，方便大家安心浏览与点图参考。</p>
+        <h3>署名与参考范围（选填）</h3>
+        <p>填写你想展示的昵称即可；设计说明和素材来源都为选填，若方便也可顺手点选标签，便于后续标注署名。</p>
       </section>
       <section>
         <h3>轻松加入衣橱</h3>

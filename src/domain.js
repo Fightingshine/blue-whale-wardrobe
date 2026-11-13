@@ -120,15 +120,8 @@ export function validateSubmission(form = {}, image) {
   if (!cleanText(form.author, 40)) return '写上你想展示在图鉴里的作者昵称吧。';
   const keywords = keywordsFrom(form.keywords);
   if (!keywords.length || keywords.length > 8 || keywords.some(x => x.length > 20)) return '请填写 1—8 个触发关键词，每个不超过 20 字。';
-  const styles = Array.isArray(form.designStyles) ? form.designStyles.filter(Boolean) : [];
-  if (!styles.length && cleanText(form.description, 800).length < 6) return '请点选至少 1 个风格主题，或写几句补充设计说明。';
-  const hasSourceType = Boolean(SOURCE_TYPE_OPTIONS.find(x => x.id === form.sourceType));
-  const customSource = cleanText(form.sourceNote ?? form.source, 300);
-  if (!hasSourceType && !customSource) return '请选择这套三视图的素材来源类型。';
-  const scopes = Array.isArray(form.usageScopes) ? form.usageScopes.filter(Boolean) : [];
-  if (hasSourceType && !scopes.length && !customSource) return '请至少勾选 1 项开放使用范围，或填写一句补充说明。';
   const confirmed = form.confirmed !== undefined ? Boolean(form.confirmed) : Boolean(form.rights && form.public);
-  if (!confirmed) return '请勾选确认来源无误并同意在 GitHub 公开投稿。';
+  if (!confirmed) return '请勾选确认同意前往 GitHub 公开投稿。';
   return '';
 }
 
@@ -144,13 +137,15 @@ export function submissionData(form, image) {
   const usageLabels = (Array.isArray(form.usageScopes) ? form.usageScopes : [])
     .map(id => USAGE_SCOPE_OPTIONS.find(x => x.id === id)?.label)
     .filter(Boolean);
+  const composedDescription = composeDescription(form);
+  const composedAttribution = composeAttribution(form);
   return {
     schema: 'whale-skin-submission/v1',
     name: cleanText(form.name, 40),
     author: cleanText(form.author, 40),
     keywords: keywordsFrom(form.keywords),
-    description: composeDescription(form),
-    attribution: composeAttribution(form),
+    description: composedDescription || '未单独填写设计说明，详见三视图原图。',
+    attribution: composedAttribution || '未单独填写素材来源与使用范围，可在 Issue 中补充说明。',
     designTopics: {
       styles: styleLabels,
       details: detailLabels,
@@ -169,9 +164,9 @@ export function submissionData(form, image) {
 }
 
 export function submissionMarkdown(data) {
-  const styles = data.designTopics?.styles?.join('、') || '见下方说明';
-  const sourceType = data.sourceTopics?.type || data.attribution;
-  const usages = data.sourceTopics?.usages?.join('、') || '见资料正文';
+  const styles = data.designTopics?.styles?.join('、') || (data.designTopics?.note ? '见补充想法' : '未额外填写（见三视图原图）');
+  const sourceType = data.sourceTopics?.type || (data.sourceTopics?.note ? '见补充备注' : '未额外填写（可在 Issue 中补充）');
+  const usages = data.sourceTopics?.usages?.join('、') || '未额外勾选';
   return `<!-- whale-skin-submission:v1 -->
 ## 皮肤投稿：${data.name.replace(/[\r\n]/gu, ' ')}
 
@@ -179,10 +174,10 @@ export function submissionMarkdown(data) {
 
 【在这里附上图片】
 
-### 设计与来源速览
+### 投稿速览
 - **作者署名**：${data.author}
 - **触发关键词**：${data.keywords.join('、')}
-- **风格主题**：${styles}
+- **设计说明**：${styles}
 - **素材来源**：${sourceType}
 - **开放范围**：${usages}
 - **日报轮换**：${data.requestedDailyRotation ? '希望加入每日穿搭轮换' : '先收录到衣橱图鉴'}
@@ -196,8 +191,7 @@ ${JSON.stringify(data, null, 2)}
 
 </details>
 
-- [x] 来源与使用范围已确认，同意公开投稿至 GitHub。
-- [x] 原图版权归创作者所有，后续将由维护者整理放进衣橱。`;
+- [x] 同意将这套三视图公开投稿至 GitHub，原图版权归创作者所有。`;
 }
 
 export function issueUrl(repositoryUrl, data) {

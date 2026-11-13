@@ -65,14 +65,26 @@ test('没有图片不能提交', () => {
 test('缺少昵称不能提交', () => {
   assert.match(validateSubmission({ ...form, author: '' }, image), /昵称/u);
 });
-test('未选风格且没有补充设计说明不能提交', () => {
-  assert.match(validateSubmission({ ...form, designStyles: [], description: '短' }, image), /风格主题/u);
-});
-test('未选素材来源类型且无手填来源不能提交', () => {
-  assert.match(validateSubmission({ ...form, sourceType: '', sourceNote: '' }, image), /素材来源/u);
-});
-test('未选使用范围且无补充说明不能提交', () => {
-  assert.match(validateSubmission({ ...form, usageScopes: [], sourceNote: '' }, image), /使用范围/u);
+test('设计说明和素材来源均可留空选填并直接通过校验', () => {
+  const minimal = {
+    name: '极简投稿大肥鱼',
+    author: '路过同学',
+    keywords: '极简风',
+    designStyles: [],
+    designDetails: [],
+    description: '',
+    sourceType: '',
+    usageScopes: [],
+    sourceNote: '',
+    rotation: true,
+    confirmed: true,
+  };
+  assert.equal(validateSubmission(minimal, image), '');
+  const data = submissionData(minimal, image);
+  assert.ok(data.description.length > 0);
+  assert.ok(data.attribution.length > 0);
+  const md = submissionMarkdown(data);
+  assert.match(md, /未额外填写/u);
 });
 test('未勾选提交确认不能提交', () => {
   assert.match(validateSubmission({ ...form, confirmed: false }, image), /确认/u);
@@ -112,7 +124,7 @@ test('不允许把投稿转发到任意域名', () => {
 });
 test('Markdown包含结构化速览且保持友好措辞', () => {
   const md = submissionMarkdown(submissionData(form, image));
-  assert.match(md, /风格主题\*\*：学院制服/u);
+  assert.match(md, /设计说明\*\*：学院制服/u);
   assert.match(md, /素材来源\*\*：原创绘制/u);
   assert.doesNotMatch(md, /触发生图扣费/u);
 });

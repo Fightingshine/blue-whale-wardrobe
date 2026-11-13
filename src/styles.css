@@ -606,8 +606,19 @@ h1, h2, h3, p { margin: 0; }
   line-height: 1.4;
   color: var(--ink);
 }
-.submission-fields label > span,
-.topic-section legend > span { color: #c45c67; }
+.submission-fields label > span { color: #c45c67; }
+.optional-pill {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b6193;
+  background: #eaf0ff;
+  border: 1px solid #d0dcf7;
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 5px;
+  vertical-align: 1px;
+}
 .submission-fields input:not([type=checkbox]),
 .submission-fields textarea {
   display: block;
