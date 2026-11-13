@@ -56,52 +56,148 @@ export function filterSkins(skins, query, category) {
     (!q || [skin.name, skin.description, ...skin.keywords].join(' ').toLocaleLowerCase('zh-CN').includes(q)));
 }
 
-export function validateSubmission(form, image) {
-  if (!image) return '请先选择一张包含正面、侧面、背面的三视图。';
-  if (!cleanText(form.name, 40)) return '请填写皮肤名称。';
-  if (!cleanText(form.author, 40)) return '请填写作者署名，使用昵称即可。';
+export const DESIGN_STYLE_OPTIONS = [
+  { id: 'campus', label: '学院制服', hint: '水手服 / 百褶裙 / 西装外套' },
+  { id: 'daily', label: '日常私服', hint: '卫衣 / 针织 / 轻松便装' },
+  { id: 'season', label: '四季限定', hint: '春游 / 夏日海风 / 秋冬绒棉' },
+  { id: 'festival', label: '节日庆典', hint: '新年 / 生日 / 派对穿搭' },
+  { id: 'fantasy', label: '童话海洋', hint: '礼服 / 魔法 / 海洋星辰' },
+  { id: 'retro', label: '复古像素', hint: '格纹拼接 / 像素 / 怀旧风' },
+];
+
+export const DESIGN_DETAIL_OPTIONS = [
+  { id: 'hair', label: '深蓝渐浅蓝长发' },
+  { id: 'ears-tail', label: '鲸鳍耳与蓝白鲸尾' },
+  { id: 'ahoge-eyes', label: '弯呆毛与蓝眼睛' },
+  { id: 'ocean-trim', label: '海浪 / 贝壳小饰品' },
+  { id: 'matching-trim', label: '正侧背配饰一致' },
+];
+
+export const SOURCE_TYPE_OPTIONS = [
+  { id: 'original', label: '原创绘制', note: '自己手绘或从零设计的穿搭', summary: '创作者原创设计绘制' },
+  { id: 'remix', label: '原图改绘', note: '基于原有大肥鱼三视图换衣配色', summary: '基于大肥鱼原有设定图二创改绘' },
+  { id: 'ai', label: 'AI 辅助设计', note: '借助生图工具生成并经人工整理', summary: 'AI 辅助生成并经人工整理微调' },
+  { id: 'authorized', label: '授权代投', note: '已获原作者同意并代为分享投稿', summary: '已获原作者授权并代为分享' },
+];
+
+export const USAGE_SCOPE_OPTIONS = [
+  { id: 'gallery', label: '在衣橱图鉴公开展示', summary: '可在衣橱图鉴公开展示' },
+  { id: 'bot', label: '作为群聊小蓝鲸画图参考', summary: '可作为小蓝鲸画图穿搭参考' },
+  { id: 'remix', label: '欢迎群友在此基础上继续二创', summary: '欢迎在此基础上继续二创' },
+];
+
+export function composeDescription(form = {}) {
+  const styles = (Array.isArray(form.designStyles) ? form.designStyles : [])
+    .map(id => DESIGN_STYLE_OPTIONS.find(x => x.id === id)?.label || cleanText(id, 24))
+    .filter(Boolean);
+  const details = (Array.isArray(form.designDetails) ? form.designDetails : [])
+    .map(id => DESIGN_DETAIL_OPTIONS.find(x => x.id === id)?.label || cleanText(id, 30))
+    .filter(Boolean);
+  const note = cleanText(form.description, 800);
+  const parts = [];
+  if (styles.length) parts.push(`风格主题：${styles.join('、')}`);
+  if (details.length) parts.push(`保留与细节：${details.join('、')}`);
+  if (note) parts.push((styles.length || details.length) ? `补充想法：${note}` : note);
+  return cleanText(parts.join('｜'), 1000);
+}
+
+export function composeAttribution(form = {}) {
+  const sourceOption = SOURCE_TYPE_OPTIONS.find(x => x.id === form.sourceType);
+  const scopes = (Array.isArray(form.usageScopes) ? form.usageScopes : [])
+    .map(id => USAGE_SCOPE_OPTIONS.find(x => x.id === id)?.summary || cleanText(id, 40))
+    .filter(Boolean);
+  const note = cleanText(form.sourceNote ?? form.source, 300);
+  const parts = [];
+  if (sourceOption) parts.push(`素材来源：${sourceOption.summary}`);
+  if (scopes.length) parts.push(`使用范围：${scopes.join('、')}`);
+  if (note) parts.push((sourceOption || scopes.length) ? `补充说明：${note}` : note);
+  return cleanText(parts.join('；'), 500);
+}
+
+export function validateSubmission(form = {}, image) {
+  if (!image) return '请先选择一张包含正面、侧面、背面的三视图图片。';
+  if (!cleanText(form.name, 40)) return '给这套新衣起个皮肤名称吧。';
+  if (!cleanText(form.author, 40)) return '写上你想展示在图鉴里的作者昵称吧。';
   const keywords = keywordsFrom(form.keywords);
-  if (!keywords.length || keywords.length > 8 || keywords.some(x => x.length > 20)) return '请填写 1—8 个关键词，每个不超过 20 字。';
-  if (cleanText(form.description, 1000).length < 10) return '请至少用 10 个字介绍服装、配色或设计细节。';
-  if (!cleanText(form.source, 500)) return '请说明素材来源及允许的使用范围。';
-  if (!form.rights) return '请确认你有权公开这张图片，并说明使用范围。';
-  if (!form.public) return '请确认你了解投稿公开、且不会自动加入机器人。';
+  if (!keywords.length || keywords.length > 8 || keywords.some(x => x.length > 20)) return '请填写 1—8 个触发关键词，每个不超过 20 字。';
+  const styles = Array.isArray(form.designStyles) ? form.designStyles.filter(Boolean) : [];
+  if (!styles.length && cleanText(form.description, 800).length < 6) return '请点选至少 1 个风格主题，或写几句补充设计说明。';
+  const hasSourceType = Boolean(SOURCE_TYPE_OPTIONS.find(x => x.id === form.sourceType));
+  const customSource = cleanText(form.sourceNote ?? form.source, 300);
+  if (!hasSourceType && !customSource) return '请选择这套三视图的素材来源类型。';
+  const scopes = Array.isArray(form.usageScopes) ? form.usageScopes.filter(Boolean) : [];
+  if (hasSourceType && !scopes.length && !customSource) return '请至少勾选 1 项开放使用范围，或填写一句补充说明。';
+  const confirmed = form.confirmed !== undefined ? Boolean(form.confirmed) : Boolean(form.rights && form.public);
+  if (!confirmed) return '请勾选确认来源无误并同意在 GitHub 公开投稿。';
   return '';
 }
 
 export function submissionData(form, image) {
+  const confirmed = form.confirmed !== undefined ? Boolean(form.confirmed) : Boolean(form.rights && form.public);
+  const styleLabels = (Array.isArray(form.designStyles) ? form.designStyles : [])
+    .map(id => DESIGN_STYLE_OPTIONS.find(x => x.id === id)?.label)
+    .filter(Boolean);
+  const detailLabels = (Array.isArray(form.designDetails) ? form.designDetails : [])
+    .map(id => DESIGN_DETAIL_OPTIONS.find(x => x.id === id)?.label)
+    .filter(Boolean);
+  const sourceLabel = SOURCE_TYPE_OPTIONS.find(x => x.id === form.sourceType)?.label || '';
+  const usageLabels = (Array.isArray(form.usageScopes) ? form.usageScopes : [])
+    .map(id => USAGE_SCOPE_OPTIONS.find(x => x.id === id)?.label)
+    .filter(Boolean);
   return {
     schema: 'whale-skin-submission/v1',
     name: cleanText(form.name, 40),
     author: cleanText(form.author, 40),
     keywords: keywordsFrom(form.keywords),
-    description: cleanText(form.description, 1000),
-    attribution: cleanText(form.source, 500),
+    description: composeDescription(form),
+    attribution: composeAttribution(form),
+    designTopics: {
+      styles: styleLabels,
+      details: detailLabels,
+      note: cleanText(form.description, 800),
+    },
+    sourceTopics: {
+      type: sourceLabel,
+      usages: usageLabels,
+      note: cleanText(form.sourceNote ?? form.source, 300),
+    },
     requestedDailyRotation: Boolean(form.rotation),
     reference: { filename: cleanText(image.name, 120), sha256: image.sha256, width: image.width, height: image.height, bytes: image.size },
-    rightsConfirmed: Boolean(form.rights),
-    publicSubmissionConfirmed: Boolean(form.public),
+    rightsConfirmed: confirmed,
+    publicSubmissionConfirmed: confirmed,
   };
 }
 
 export function submissionMarkdown(data) {
+  const styles = data.designTopics?.styles?.join('、') || '见下方说明';
+  const sourceType = data.sourceTopics?.type || data.attribution;
+  const usages = data.sourceTopics?.usages?.join('、') || '见资料正文';
   return `<!-- whale-skin-submission:v1 -->
 ## 皮肤投稿：${data.name.replace(/[\r\n]/gu, ' ')}
 
-**请在下面拖入三视图原图，再发布 Issue。仅有这段文字不算完成附图。**
+**最后一步：把刚才选择的三视图原图拖到下方，等图片上传完成后点提交就好啦！**
 
 【在这里附上图片】
 
-### 投稿资料
+### 设计与来源速览
+- **作者署名**：${data.author}
+- **触发关键词**：${data.keywords.join('、')}
+- **风格主题**：${styles}
+- **素材来源**：${sourceType}
+- **开放范围**：${usages}
+- **日报轮换**：${data.requestedDailyRotation ? '希望加入每日穿搭轮换' : '先收录到衣橱图鉴'}
+
+<details>
+<summary>完整结构化投稿资料（供维护者收录使用）</summary>
+
 \`\`\`json
 ${JSON.stringify(data, null, 2)}
 \`\`\`
 
-- [x] 我有权公开此图；素材来源和使用范围已在资料中说明。
-- [x] 我知道 Issue 公开；网站代码的 MIT 许可不自动覆盖图片。
-- [x] 我知道投稿需要人工审核，不会自动上线或触发生图扣费。
+</details>
 
-维护者审核：三视图一致性 / 角色辨识度 / 关键词冲突 / 素材权利说明。`;
+- [x] 来源与使用范围已确认，同意公开投稿至 GitHub。
+- [x] 原图版权归创作者所有，后续将由维护者整理放进衣橱。`;
 }
 
 export function issueUrl(repositoryUrl, data) {
@@ -112,24 +208,24 @@ export function issueUrl(repositoryUrl, data) {
   url.searchParams.set('body', submissionMarkdown(data));
   url.searchParams.set('labels', '皮肤投稿');
   if (url.href.length > 7500) {
-    url.searchParams.set('body', `## 皮肤投稿：${data.name}\n\n资料较长，请把网页中复制的完整投稿说明粘贴到这里，并拖入三视图原图，再发布 Issue。\n\n网页本地预览不等于已上传；投稿需要人工审核。`);
+    url.searchParams.set('body', `## 皮肤投稿：${data.name}\n\n文字资料较长，请把网页中复制好的完整投稿说明粘贴到这里，再拖入三视图原图就完成啦。`);
   }
   return url.href;
 }
 
 export async function readLocalImage(file, limits) {
-  if (!file || !IMAGE_TYPES.has(file.type)) throw new Error('请使用 PNG、JPG 或 WebP 图片；不接收 SVG、GIF 和压缩包。');
-  if (file.size > limits.maxUploadBytes || file.size < 24) throw new Error('图片需为有效文件，且不超过 10 MB。');
+  if (!file || !IMAGE_TYPES.has(file.type)) throw new Error('暂仅支持 PNG、JPG 或 WebP 图片（不支持 SVG、GIF 或压缩包）。');
+  if (file.size > limits.maxUploadBytes || file.size < 24) throw new Error('图片需为有效文件，且大小不超过 10 MB。');
   const bytes = await file.arrayBuffer();
   const actualType = sniffImage(bytes);
-  if (!actualType || actualType !== file.type) throw new Error('文件内容与图片格式不一致，请重新导出原图。');
+  if (!actualType || actualType !== file.type) throw new Error('文件内容与图片格式不一致，请换一张重新导出的图片试试。');
   const header = imageDimensions(bytes);
-  if (header.width < 1 || header.height < 1 || header.width > 10000 || header.height > 10000 || header.width * header.height > limits.maxPixels) throw new Error('图片尺寸过大或无效，请缩小到 2400 万像素以内。');
-  const bitmap = await createImageBitmap(file).catch(() => { throw new Error('图片无法解码，请重新导出 PNG 或 JPG。'); });
+  if (header.width < 1 || header.height < 1 || header.width > 10000 || header.height > 10000 || header.width * header.height > limits.maxPixels) throw new Error('图片分辨率过高或无效，建议控制在 2400 万像素以内。');
+  const bitmap = await createImageBitmap(file).catch(() => { throw new Error('这张图片暂时无法读取，可以重新导出 PNG 或 JPG 再试一次。'); });
   const { width, height } = bitmap;
   bitmap.close();
-  if (width > 10000 || height > 10000 || width * height > limits.maxPixels) throw new Error('图片尺寸过大，请缩小到 2400 万像素以内。');
-  if (width < 600 || height < 300 || width < height) throw new Error('请上传横向、完整的三视图拼图，至少 600 × 300 像素。');
+  if (width > 10000 || height > 10000 || width * height > limits.maxPixels) throw new Error('图片分辨率过高，建议控制在 2400 万像素以内。');
+  if (width < 600 || height < 300 || width < height) throw new Error('三视图需要是横向拼图（宽大于高，且至少 600 × 300 像素）。');
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   const sha256 = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2,'0')).join('');
   return { name: file.name, size: file.size, width, height, sha256, url: URL.createObjectURL(file) };
