@@ -12,8 +12,8 @@
 
 - **全部皮肤图鉴（不限数量）**
   展示基础与共创皮肤的正面、侧面、背面横向三视图，支持按风格标签筛选、名称/关键词搜索、高清预览弹窗、原图下载与 SHA-256 校验信息查看，并自动关联原投稿 Issue。
-- **低门槛网页投稿辅助**
-  选择本地三视图后即可实时预览并生成结构化投稿说明；支持关键词设置与**设计说明 / 素材来源快捷选题（均为选填）**，填写后一键带入 GitHub Issue 草稿，也可复制文本或下载 JSON 资料。
+- **低门槛网页投稿辅助（支持网页直传与 GitHub 备用双模式）**
+  选择本地三视图后即可实时预览并生成结构化投稿说明；支持关键词设置与**设计说明 / 素材来源快捷选题（均为选填）**。当通过构建变量配置了 Cloudflare Worker 直传接口与 Turnstile 时，同学在网页内完成人机验证即可**不跳转直接投稿**（无需登录 GitHub）；未配置时自动保留「去 GitHub 附图投稿」模式。
 - **「已收录」标签自动同步上线**
   投稿 Issue 经维护者审核并打上 `已收录` 标签后，GitHub Actions 会自动分页拉取全部已收录投稿、校验并打包符合规格的 PNG/JPG/WebP 原图，无需手动修改代码或受数量限制，几分钟内即可显示在图鉴首页；取消标签、关闭或删除对应 Issue 后也会自动同步移除。
 - **纯静态与隐私友好**
@@ -128,7 +128,8 @@ npm run test:e2e
 
 1. 推送仓库后，进入仓库 **Settings → Pages → Build and deployment → Source**，选择 **GitHub Actions**。
 2. 构建工具 [`vite.config.js`](vite.config.js) 使用相对资源基准路径（`base: './'`），可直接部署到仓库子路径，无需额外配置前端路由。
-3. 如需复用到其他账号或仓库：
+3. 如需开启**网页内免跳转直传投稿**：按 [`worker/README.md`](worker/README.md) 部署 Cloudflare Worker 接收端，并在仓库 Actions Variables 中填入 `VITE_SUBMIT_API_URL` 与 `VITE_TURNSTILE_SITE_KEY`；未配置时前端默认走「去 GitHub 附图投稿」模式。
+4. 如需复用到其他账号或仓库：
    - 修改 [`src/site.js`](src/site.js) 中的 `name`、`owner`、`repository` 与 `github` 链接；
    - 确认目标仓库已创建 `已收录` Issue 标签，并按需更新 [`scripts/sync-approved-issues.mjs`](scripts/sync-approved-issues.mjs) 的默认仓库名、Issue 模板和本文档中的仓库链接。
 
@@ -154,8 +155,12 @@ src/
   site.js                  站点信息与相对资源地址解析
   styles.css               桌面端与移动端自适应样式
 tests/
-  *.test.mjs               目录、领域逻辑与已收录 Issue 自动同步单元测试
+  *.test.mjs               目录、领域逻辑、Worker 接口与已收录 Issue 同步单元测试
   e2e/site.spec.js         Playwright 桌面端与移动端端到端回归测试
+worker/
+  src/                     Cloudflare Worker 网页直传接收与服务端校验代码
+  wrangler.toml            Worker 限流绑定与允许来源配置
+  README.md                Cloudflare Workers 与 Turnstile 部署指南
 ASSET_RIGHTS.md            代码与角色/图片素材权利分界说明
 CONTRIBUTING.md            共创投稿与代码贡献指南
 SECURITY.md                安全与隐私边界说明
