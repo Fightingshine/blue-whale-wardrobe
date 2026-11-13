@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { SITE, assetUrl } from './site.js';
+import { SITE, assetUrl, getDirectSubmitConfig, isDirectSubmitEnabled } from './site.js';
 import {
   DESIGN_DETAIL_OPTIONS,
   DESIGN_STYLE_OPTIONS,
@@ -112,19 +112,105 @@ const emptyForm = {
   confirmed: false,
 };
 
+let turnstileLoaderPromise = null;
+function loadTurnstileScript() {
+  if (typeof window === 'undefined') return Promise.reject(new Error('非浏览器环境无法加载人机验证。'));
+  if (window.turnstile && typeof window.turnstile.render === 'function') {
+    return Promise.resolve(window.turnstile);
+  }
+  if (!turnstileLoaderPromise) {
+    turnstileLoaderPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (window.turnstile && typeof window.turnstile.render === 'function') {
+          resolve(window.turnstile);
+        } else {
+          turnstileLoaderPromise = null;
+          reject(new Error('安全验证组件未就绪，可改用 GitHub 手动投稿。'));
+        }
+      };
+      script.onerror = () => {
+        turnstileLoaderPromise = null;
+        reject(new Error('安全验证组件加载失败，可稍后重试或改用 GitHub 手动投稿。'));
+      };
+      document.head.appendChild(script);
+    });
+  }
+  return turnstileLoaderPromise;
+}
+
 function Submission({ onClose, template, onCopy }) {
+  const directConfig = getDirectSubmitConfig();
+  const directEnabled = isDirectSubmitEnabled(directConfig);
   const [form, setForm] = useState(emptyForm);
   const [image, setImage] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState(null);
+  const [turnstileToken, setTurnstileToken] = useState('');
+  const [turnstileNotice, setTurnstileNotice] = useState('');
   const [draft, setDraft] = useState('');
   const [dragging, setDragging] = useState(false);
   const [feedback, setFeedback] = useState('');
   const imageRef = useRef(null);
+  const fileRef = useRef(null);
+  const turnstileRef = useRef(null);
+  const widgetIdRef = useRef(null);
   const selection = useRef(0);
   const input = useRef(null);
 
   useEffect(() => () => { selection.current += 1; if (imageRef.current) URL.revokeObjectURL(imageRef.current.url); }, []);
+
+  useEffect(() => {
+    if (!directEnabled || submitResult || !turnstileRef.current) return undefined;
+    let cancelled = false;
+    setTurnstileNotice('');
+    loadTurnstileScript().then(turnstile => {
+      if (cancelled || !turnstileRef.current) return;
+      turnstileRef.current.innerHTML = '';
+      widgetIdRef.current = turnstile.render(turnstileRef.current, {
+        sitekey: directConfig.turnstileSiteKey,
+        theme: 'light',
+        callback: token => {
+          if (cancelled) return;
+          setTurnstileToken(token || '');
+          setTurnstileNotice('');
+          setError('');
+        },
+        'expired-callback': () => {
+          if (cancelled) return;
+          setTurnstileToken('');
+          setTurnstileNotice('人机验证已过期，请重新勾选确认。');
+        },
+        'error-callback': () => {
+          if (cancelled) return;
+          setTurnstileToken('');
+          setTurnstileNotice('人机验证未能完成，请重试或改用 GitHub 手动投稿。');
+        },
+      });
+    }).catch(err => {
+      if (!cancelled) setTurnstileNotice(err.message);
+    });
+    return () => {
+      cancelled = true;
+      setTurnstileToken('');
+      if (widgetIdRef.current != null) {
+        try { window.turnstile?.remove?.(widgetIdRef.current); } catch {}
+        widgetIdRef.current = null;
+      }
+    };
+  }, [directEnabled, directConfig.turnstileSiteKey, Boolean(submitResult)]);
+
+  function resetTurnstile() {
+    setTurnstileToken('');
+    if (widgetIdRef.current != null) {
+      try { window.turnstile?.reset?.(widgetIdRef.current); } catch {}
+    }
+  }
 
   const field = name => ({
     value: form[name],
@@ -149,11 +235,12 @@ function Submission({ onClose, template, onCopy }) {
       if (current !== selection.current) { URL.revokeObjectURL(value.url); return; }
       if (imageRef.current) URL.revokeObjectURL(imageRef.current.url);
       imageRef.current = value;
+      fileRef.current = file;
       setImage(value);
     } catch (e) {
       if (current !== selection.current) return;
       if (imageRef.current) URL.revokeObjectURL(imageRef.current.url);
-      imageRef.current = null; setImage(null); setError(e.message);
+      imageRef.current = null; fileRef.current = null; setImage(null); setError(e.message);
     } finally { if (current === selection.current) setLoading(false); }
   }
 
@@ -180,7 +267,7 @@ function Submission({ onClose, template, onCopy }) {
   }
 
   function openGithub(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const data = getData(); if (!data) return;
     setDraft(submissionMarkdown(data));
     const url = issueUrl(SITE.github, data);
@@ -192,14 +279,82 @@ function Submission({ onClose, template, onCopy }) {
     window.open(url, '_blank', 'noopener,noreferrer');
   }
 
+  async function submitDirect(e) {
+    e.preventDefault();
+    const data = getData();
+    if (!data) return;
+    if (!fileRef.current) {
+      setError('请先选择一张三视图图片。');
+      return;
+    }
+    if (!turnstileToken) {
+      setError('请先完成下方人机验证后再提交。');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    setFeedback('');
+    try {
+      const body = new FormData();
+      body.set('image', fileRef.current, fileRef.current.name);
+      body.set('payload', JSON.stringify(form));
+      body.set('cf-turnstile-response', turnstileToken);
+      const res = await fetch(`${directConfig.submitApiUrl}/api/submit`, { method: 'POST', body });
+      const payload = await res.json().catch(() => null);
+      if (!res.ok || !payload?.ok) {
+        throw new Error(payload?.error || `投稿提交失败（HTTP ${res.status}），你可以改用 GitHub 手动投稿。`);
+      }
+      setSubmitResult(payload);
+    } catch (err) {
+      setError(err.message || '直传提交暂时不可用，请重试或改用 GitHub 手动投稿。');
+      resetTurnstile();
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function resetAnother() {
+    if (imageRef.current) URL.revokeObjectURL(imageRef.current.url);
+    imageRef.current = null;
+    fileRef.current = null;
+    setImage(null);
+    setForm(emptyForm);
+    setDraft('');
+    setFeedback('');
+    setError('');
+    setSubmitResult(null);
+    if (input.current) input.current.value = '';
+  }
+
+  if (submitResult) {
+    return <Modal title="皮肤投稿" onClose={onClose} className="submission-dialog submission-done-dialog">
+      <div className="submission-success" role="status">
+        <span className="success-badge"><Icon name="check" size={30} /></span>
+        <h2>投稿已收到，正在等待审核！</h2>
+        <p>我们已收到你提交的《<strong>{submitResult.name}</strong>》，不用再跳转到 GitHub 手动传图啦。</p>
+        <div className="success-meta">
+          <span>审核编号：<strong>#{submitResult.issueNumber}</strong></span>
+          {typeof submitResult.issueUrl === 'string' && submitResult.issueUrl.startsWith('https://github.com/') && (
+            <a href={submitResult.issueUrl} target="_blank" rel="noreferrer">查看投稿 Issue #{submitResult.issueNumber} <Icon name="external" size={14} /></a>
+          )}
+        </div>
+        <p className="success-note">维护者确认三视图、署名与使用范围并打上「已收录」标签后，作品就会自动出现在图鉴首页。</p>
+        <div className="button-row success-actions">
+          <button type="button" className="button secondary" onClick={resetAnother}>继续投递下一套</button>
+          <button type="button" className="button primary" onClick={onClose}>返回皮肤图鉴</button>
+        </div>
+      </div>
+    </Modal>;
+  }
+
   return <Modal title="皮肤投稿" onClose={onClose} className="submission-dialog">
     <div className="submission-heading">
       <div className="small-brand"><WhaleMark /><span>大肥鱼衣橱</span></div>
       <h2>把你的新衣，放进衣橱。</h2>
-      <p>挑好三视图并点选灵感标签，去 GitHub 附上原图就能加入大家的图鉴啦</p>
+      <p>{directEnabled ? '选好三视图并完成人机验证，直接在网页就能完成投稿' : '挑好三视图并点选灵感标签，去 GitHub 附上原图就能加入大家的图鉴啦'}</p>
     </div>
 
-    <form onSubmit={openGithub} noValidate>
+    <form onSubmit={directEnabled ? submitDirect : openGithub} noValidate>
       <div className="submission-columns">
         <div className="submission-preview">
           <div
@@ -209,7 +364,7 @@ function Submission({ onClose, template, onCopy }) {
             onDrop={e => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]); }}
           >
             <input ref={input} id="reference-file" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => choose(e.target.files[0])} aria-label="选择三视图图片" />
-            <button type="button" className="upload-trigger" onClick={() => input.current.click()} disabled={loading}>
+            <button type="button" className="upload-trigger" onClick={() => input.current.click()} disabled={loading || submitting}>
               <Icon name={image ? 'check' : 'upload'} size={36} />
               <span>
                 {loading ? '正在检查图片…' : image ? '更换一张三视图' : '选择或拖入三视图'}
@@ -225,7 +380,11 @@ function Submission({ onClose, template, onCopy }) {
 
           <p className={`local-only ${image ? 'is-ready' : ''}`}>
             <Icon name={image ? 'check' : 'info'} size={15} />
-            {image ? `本地预览已就绪 · 待会在 GitHub 拖入原图即可 (${cleanText(image.name, 30)})` : '三视图排版示范 · 选好图片后可在这里实时预览'}
+            {image
+              ? (directEnabled
+                ? `三视图已检查就绪 · 可直接提交 (${cleanText(image.name, 30)})`
+                : `本地预览已就绪 · 待会在 GitHub 拖入原图即可 (${cleanText(image.name, 30)})`)
+              : '三视图排版示范 · 选好图片后可在这里实时预览'}
           </p>
 
           <div className="three-guides">
@@ -363,26 +522,46 @@ function Submission({ onClose, template, onCopy }) {
             </label>
             <label className="check-label">
               <input type="checkbox" checked={form.confirmed} onChange={e => { setForm(prev => ({ ...prev, confirmed: e.target.checked })); setError(''); }} />
-              <span>我同意将这套三视图公开投稿至 GitHub，并会在跳转页附上原图</span>
+              <span>{directEnabled ? '我同意将这套三视图公开投稿至 GitHub 图鉴，原图版权归创作者所有' : '我同意将这套三视图公开投稿至 GitHub，并会在跳转页附上原图'}</span>
             </label>
           </div>
         </div>
       </div>
+
+      {directEnabled && (
+        <div className="turnstile-box">
+          <div ref={turnstileRef} className="turnstile-widget" />
+          <span className="turnstile-hint">
+            {turnstileNotice || (turnstileToken ? '安全验证已通过，点击右下角「直接提交投稿」即可上传。' : '完成人机验证后即可直接在网页提交，不用跳转 GitHub。')}
+          </span>
+        </div>
+      )}
 
       {error && <p className="form-error" role="alert"><Icon name="info" />{error}</p>}
       {feedback && <p className="form-feedback" role="status"><Icon name="check" />{feedback}</p>}
 
       <div className="next-step">
         <Icon name="info" />
-        <span><strong>完成提交：</strong>点击右侧「去 GitHub 附图投稿」会自动生成文字资料；在打开的页面把刚才那张原图拖进正文框，点提交就好啦！</span>
+        <span>
+          {directEnabled
+            ? <><strong>网页直传投稿：</strong>填写资料并完成验证后点击「直接提交投稿」，系统会自动上传原图并生成待审投稿（也支持点「GitHub 手动投稿」备用）。</>
+            : <><strong>完成提交：</strong>点击右侧「去 GitHub 附图投稿」会自动生成文字资料；在打开的页面把刚才那张原图拖进正文框，点提交就好啦！</>}
+        </span>
       </div>
 
       <div className="submission-footer">
         <span><a href={`${SITE.github}/blob/main/ASSET_RIGHTS.md`} target="_blank" rel="noreferrer">图片署名与权利说明</a> · 原图版权仍归创作者所有</span>
         <div className="button-row">
           <button className="text-button draft-download" type="button" onClick={downloadDraft}>下载资料 (JSON)</button>
-          <button className="button secondary" type="button" onClick={copyDraft} disabled={loading}><Icon name="copy" />复制投稿说明</button>
-          <button className="button primary" type="submit" disabled={loading}><Icon name="external" />去 GitHub 附图投稿</button>
+          <button className="button secondary" type="button" onClick={copyDraft} disabled={loading || submitting}><Icon name="copy" />复制投稿说明</button>
+          {directEnabled ? (
+            <>
+              <button className="button secondary" type="button" onClick={openGithub} disabled={loading || submitting}><Icon name="external" />GitHub 手动投稿</button>
+              <button className="button primary" type="submit" disabled={loading || submitting}><Icon name="upload" />{submitting ? '正在提交…' : '直接提交投稿'}</button>
+            </>
+          ) : (
+            <button className="button primary" type="submit" disabled={loading}><Icon name="external" />去 GitHub 附图投稿</button>
+          )}
         </div>
       </div>
 
