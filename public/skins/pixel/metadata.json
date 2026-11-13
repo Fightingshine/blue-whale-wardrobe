@@ -1,0 +1,27 @@
+{
+  "id": "pixel",
+  "name": "像素风大肥鱼",
+  "category": "pixel",
+  "categoryLabel": "像素",
+  "status": "approved",
+  "keywords": [
+    "像素风",
+    "像素画",
+    "像素皮肤"
+  ],
+  "description": "像素风格的特别演绎，复古精致。",
+  "appearance": "深蓝长发、浅蓝发梢、蓝眼、蕾丝头箍、蓝白侧鳍、金纹女仆裙、鲸鱼白围裙和鲸尾；保留细腻方块与阶梯轮廓。",
+  "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+  "legacy": true,
+  "rights": {
+    "license": "LicenseRef-Asset-Rights-Reserved",
+    "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+  },
+  "reference": {
+    "path": "skins/pixel/reference.png",
+    "sha256": "de60549edc65fbf0647490c74f4a5db62e1054e3d4bb5a38a64c8c7790239db4",
+    "width": 1678,
+    "height": 937,
+    "bytes": 2175158
+  }
+}

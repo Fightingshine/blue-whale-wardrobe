@@ -1,0 +1,113 @@
+{
+  "schema": "whale-skin-catalog/v1",
+  "name": "大肥鱼衣橱",
+  "skins": [
+    {
+      "id": "original",
+      "name": "原装大肥鱼",
+      "category": "original",
+      "categoryLabel": "女仆",
+      "status": "approved",
+      "keywords": [
+        "原装",
+        "原皮",
+        "女仆装"
+      ],
+      "description": "大肥鱼的基础造型，典雅清新。",
+      "appearance": "深靛蓝长发与浅蓝发梢、蓝眼、白蕾丝发箍、蓝蝴蝶结、侧鳍、深蓝金纹女仆裙、鲸鱼白围裙与蓝鲸尾巴。",
+      "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+      "legacy": true,
+      "rights": {
+        "license": "LicenseRef-Asset-Rights-Reserved",
+        "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+      },
+      "reference": {
+        "path": "skins/original/reference.png",
+        "sha256": "91eda2cd1150e81742cb883b29f757cfe1e27a48d9d01d61cd205a4ae83cef2b",
+        "width": 2048,
+        "height": 1143,
+        "bytes": 2145203
+      }
+    },
+    {
+      "id": "winter",
+      "name": "冬装大肥鱼",
+      "category": "winter",
+      "categoryLabel": "冬装",
+      "status": "approved",
+      "keywords": [
+        "冬装",
+        "冬日装",
+        "冬季装"
+      ],
+      "description": "温暖的冬日装扮，厚实又可爱。",
+      "appearance": "蓝鲸造型连帽外套，帽檐袖口白绒边、蓝白格纹围巾、毛球系带、手套、蓝短靴；保留鲸纹和鲸尾。",
+      "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+      "legacy": true,
+      "rights": {
+        "license": "LicenseRef-Asset-Rights-Reserved",
+        "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+      },
+      "reference": {
+        "path": "skins/winter/reference.jpg",
+        "sha256": "b3c9058c1b7128129e141754a86a998b5a86dbbe68cb7d0196a5992b2624d3b0",
+        "width": 1280,
+        "height": 714,
+        "bytes": 108816
+      }
+    },
+    {
+      "id": "sweater",
+      "name": "毛衣大肥鱼",
+      "category": "sweater",
+      "categoryLabel": "毛衣",
+      "status": "approved",
+      "keywords": [
+        "毛衣",
+        "针织装"
+      ],
+      "description": "柔软的针织毛衣，日常温暖。",
+      "appearance": "米白麻花针织帽与高领毛衣、蓝鲸胸前图案、深蓝格纹短裙、米白腿套、深蓝鞋、鲸鱼斜挎包与蓝鲸尾巴。",
+      "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+      "legacy": true,
+      "rights": {
+        "license": "LicenseRef-Asset-Rights-Reserved",
+        "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+      },
+      "reference": {
+        "path": "skins/sweater/reference.png",
+        "sha256": "de417ff6488e99c8eea09584ee83c1b361f1a28838c6e521d2b23c09ed813f64",
+        "width": 1280,
+        "height": 715,
+        "bytes": 652974
+      }
+    },
+    {
+      "id": "pixel",
+      "name": "像素风大肥鱼",
+      "category": "pixel",
+      "categoryLabel": "像素",
+      "status": "approved",
+      "keywords": [
+        "像素风",
+        "像素画",
+        "像素皮肤"
+      ],
+      "description": "像素风格的特别演绎，复古精致。",
+      "appearance": "深蓝长发、浅蓝发梢、蓝眼、蕾丝头箍、蓝白侧鳍、金纹女仆裙、鲸鱼白围裙和鲸尾；保留细腻方块与阶梯轮廓。",
+      "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+      "legacy": true,
+      "rights": {
+        "license": "LicenseRef-Asset-Rights-Reserved",
+        "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+      },
+      "reference": {
+        "path": "skins/pixel/reference.png",
+        "sha256": "de60549edc65fbf0647490c74f4a5db62e1054e3d4bb5a38a64c8c7790239db4",
+        "width": 1678,
+        "height": 937,
+        "bytes": 2175158
+      }
+    }
+  ]
+}

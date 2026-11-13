@@ -1,0 +1,27 @@
+{
+  "id": "winter",
+  "name": "冬装大肥鱼",
+  "category": "winter",
+  "categoryLabel": "冬装",
+  "status": "approved",
+  "keywords": [
+    "冬装",
+    "冬日装",
+    "冬季装"
+  ],
+  "description": "温暖的冬日装扮，厚实又可爱。",
+  "appearance": "蓝鲸造型连帽外套，帽檐袖口白绒边、蓝白格纹围巾、毛球系带、手套、蓝短靴；保留鲸纹和鲸尾。",
+  "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+  "legacy": true,
+  "rights": {
+    "license": "LicenseRef-Asset-Rights-Reserved",
+    "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+  },
+  "reference": {
+    "path": "skins/winter/reference.jpg",
+    "sha256": "b3c9058c1b7128129e141754a86a998b5a86dbbe68cb7d0196a5992b2624d3b0",
+    "width": 1280,
+    "height": 714,
+    "bytes": 108816
+  }
+}

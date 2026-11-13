@@ -1,0 +1,26 @@
+{
+  "id": "sweater",
+  "name": "毛衣大肥鱼",
+  "category": "sweater",
+  "categoryLabel": "毛衣",
+  "status": "approved",
+  "keywords": [
+    "毛衣",
+    "针织装"
+  ],
+  "description": "柔软的针织毛衣，日常温暖。",
+  "appearance": "米白麻花针织帽与高领毛衣、蓝鲸胸前图案、深蓝格纹短裙、米白腿套、深蓝鞋、鲸鱼斜挎包与蓝鲸尾巴。",
+  "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+  "legacy": true,
+  "rights": {
+    "license": "LicenseRef-Asset-Rights-Reserved",
+    "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+  },
+  "reference": {
+    "path": "skins/sweater/reference.png",
+    "sha256": "de417ff6488e99c8eea09584ee83c1b361f1a28838c6e521d2b23c09ed813f64",
+    "width": 1280,
+    "height": 715,
+    "bytes": 652974
+  }
+}

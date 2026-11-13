@@ -1,0 +1,27 @@
+{
+  "id": "original",
+  "name": "原装大肥鱼",
+  "category": "original",
+  "categoryLabel": "女仆",
+  "status": "approved",
+  "keywords": [
+    "原装",
+    "原皮",
+    "女仆装"
+  ],
+  "description": "大肥鱼的基础造型，典雅清新。",
+  "appearance": "深靛蓝长发与浅蓝发梢、蓝眼、白蕾丝发箍、蓝蝴蝶结、侧鳍、深蓝金纹女仆裙、鲸鱼白围裙与蓝鲸尾巴。",
+  "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。",
+  "legacy": true,
+  "rights": {
+    "license": "LicenseRef-Asset-Rights-Reserved",
+    "note": "原图随项目展示与保留；图片及角色相关权利仍归相应权利人。代码 MIT 许可不适用于这些图片。"
+  },
+  "reference": {
+    "path": "skins/original/reference.png",
+    "sha256": "91eda2cd1150e81742cb883b29f757cfe1e27a48d9d01d61cd205a4ae83cef2b",
+    "width": 2048,
+    "height": 1143,
+    "bytes": 2145203
+  }
+}
