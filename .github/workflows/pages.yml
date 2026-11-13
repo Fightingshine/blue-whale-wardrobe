@@ -2,14 +2,18 @@ name: 发布皮肤图鉴
 on:
   push:
     branches: [main]
+  issues:
+    types: [labeled, unlabeled, edited, closed, reopened, deleted]
   workflow_dispatch:
 permissions:
   contents: read
+  issues: read
 concurrency:
   group: github-pages
   cancel-in-progress: false
 jobs:
   build:
+    if: github.event_name != 'issues' || contains(github.event.issue.labels.*.name, '已收录') || github.event.label.name == '已收录'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +25,11 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npm run build
+      - name: 同步已收录的皮肤投稿
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/sync-approved-issues.mjs --out dist
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

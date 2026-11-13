@@ -266,6 +266,12 @@ h1, h2, h3, p { margin: 0; }
   gap: 20px;
   margin: 0 0 25px 3px;
 }
+.wardrobe-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 .catalog-toolbar h2 {
   position: relative;
   font-size: 28px;
@@ -273,6 +279,16 @@ h1, h2, h3, p { margin: 0; }
   padding-left: 20px;
   white-space: nowrap;
   line-height: 1.45;
+}
+.wardrobe-count {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3853b8;
+  background: #edf3ff;
+  border: 1px solid #d1defa;
+  border-radius: 999px;
+  padding: 4px 12px;
+  white-space: nowrap;
 }
 .catalog-toolbar h2::before {
   content: "";
@@ -316,6 +332,7 @@ h1, h2, h3, p { margin: 0; }
 .search input::placeholder { color: #9097aa; }
 .filter-group {
   display: flex;
+  flex-wrap: wrap;
   gap: 9px;
   align-items: center;
   border-left: 1px solid #b6c7ec;
@@ -357,7 +374,16 @@ h1, h2, h3, p { margin: 0; }
 .card-art { height: 198px; margin: 10px 7px 0; width: calc(100% - 14px); }
 .card-caption { padding: 12px 22px 19px; }
 .card-caption h3 { font-size: 21px; line-height: 1.5; margin-bottom: 4px; }
-.card-caption p { font-size: 14px; color: #69718a; line-height: 1.7; min-height: 24px; }
+.card-caption p {
+  font-size: 14px;
+  color: #69718a;
+  line-height: 1.7;
+  min-height: 24px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 .card-link {
   display: flex;
   gap: 6px;
@@ -449,6 +475,17 @@ h1, h2, h3, p { margin: 0; }
 .keywords span { font-size: 12px; padding: 4px 11px; border-radius: 15px; background: #eef3fd; color: #4760a0; }
 .detail-credit { border-left: 1px solid var(--line); padding-left: 25px; }
 .detail-credit small { font-size: 12px; display: block; color: #7e8aa6; margin-top: 8px; }
+.issue-source-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #3550b4;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .detail-footer {
   border-top: 1px solid #e1e8f8;
   margin-top: 25px;
@@ -1024,11 +1061,13 @@ h1, h2, h3, p { margin: 0; }
   .hero { padding-bottom: 30px; }
   .hero > .wave { height: 32px; }
   .wardrobe-section { padding: 24px 17px 15px; }
-  .catalog-toolbar { gap: 17px; margin-left: 0; margin-bottom: 18px; }
+  .catalog-toolbar { gap: 15px; margin-left: 0; margin-bottom: 18px; }
   .catalog-toolbar h2 { font-size: 22px; padding-left: 15px; }
   .catalog-toolbar h2::before { width: 5px; height: 24px; top: 4px; }
+  .wardrobe-heading { gap: 8px; }
+  .wardrobe-count { font-size: 11px; padding: 3px 9px; }
   .search { padding: 8px 12px; }
-  .filter-group { gap: 7px; overflow-x: auto; width: 100%; padding: 2px 1px 5px; }
+  .filter-group { flex-wrap: nowrap; gap: 7px; overflow-x: auto; width: 100%; padding: 2px 1px 5px; }
   .filter-group button { font-size: 12px; padding: 6px 12px; }
   .skin-grid { gap: 12px; }
   .card-art { height: 105px; margin: 8px 4px 0; width: calc(100% - 8px); }

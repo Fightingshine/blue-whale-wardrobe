@@ -72,6 +72,9 @@ function Detail({ skin, onClose, onCopy }) {
         <p>{skin.attribution}</p>
         <p>{skin.rights.note}</p>
         <small>原图 {skin.reference.width} × {skin.reference.height} · 保留原图尺寸</small>
+        {typeof skin.issueUrl === 'string' && skin.issueUrl.startsWith('https://github.com/') && (
+          <a className="issue-source-link" href={skin.issueUrl} target="_blank" rel="noreferrer">查看原投稿 Issue <Icon name="external" size={13} /></a>
+        )}
       </div>
     </div>
     <div className="detail-footer">
@@ -417,7 +420,7 @@ function Guide({ onClose, onContribute, template }) {
       </section>
       <section>
         <h3>轻松加入衣橱</h3>
-        <p>在网页点选好标签后前往 GitHub 附上原图提交，维护者看到后会帮忙整理进图鉴，并酌情同步更新到群里。</p>
+        <p>在网页填好信息并去 GitHub 附上原图提交后，维护者打上「已收录」标签就会自动展示进图鉴，收录数量无上限。</p>
       </section>
     </div>
     <div className="next-step">
@@ -514,7 +517,10 @@ export default function App() {
 
       <section className="wardrobe-section" id="wardrobe" aria-labelledby="wardrobe-title">
         <div className="catalog-toolbar">
-          <h2 id="wardrobe-title">衣橱里的{catalog.skins.length === 4 ? '四套' : `${catalog.skins.length} 套`}皮肤</h2>
+          <div className="wardrobe-heading">
+            <h2 id="wardrobe-title">全部皮肤图鉴</h2>
+            <span className="wardrobe-count">已收录 {catalog.skins.length} 套 · 持续收录中</span>
+          </div>
           <div className="catalog-controls">
             <label className="search"><Icon name="search" /><span className="sr-only">搜索皮肤</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="搜索皮肤名称…" type="search" /></label>
             <div className="filter-group" aria-label="按皮肤风格筛选">

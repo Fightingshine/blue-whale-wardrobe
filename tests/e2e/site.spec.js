@@ -7,14 +7,15 @@ const reference = fileURLToPath(new URL('../../public/skins/original/reference.p
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '衣橱里的四套皮肤' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '全部皮肤图鉴' })).toBeVisible();
 });
 
-test('图鉴加载、筛选与真实空结果', async ({ page }) => {
+test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({ page }) => {
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await expect(page).toHaveTitle(/大肥鱼衣橱/u);
   await expect(page.locator('.skin-card')).toHaveCount(4);
+  await expect(page.getByText(/已收录 4 套/u)).toBeVisible();
   await page.getByRole('searchbox', { name: '搜索皮肤' }).fill('针织装');
   await expect(page.locator('.skin-card')).toHaveCount(1);
   await expect(page.locator('.skin-card h3')).toHaveText('毛衣大肥鱼');
@@ -23,6 +24,20 @@ test('图鉴加载、筛选与真实空结果', async ({ page }) => {
   await page.getByRole('button', { name: '查看全部皮肤' }).click();
   await page.getByRole('button', { name: '像素', exact: true }).click();
   await expect(page.locator('.skin-card h3')).toHaveText('像素风大肥鱼');
+
+  // 验证超过 4 套（如新投稿已收录共创皮肤）时全部显示且无数量限制
+  await page.route('**/skins/catalog.json', async route => {
+    const res = await route.fetch();
+    const data = await res.json();
+    const extra1 = { ...data.skins[0], id: 'issue-21', name: '海盐水手大肥鱼', category: 'community', categoryLabel: '共创', issueUrl: 'https://github.com/Fightingshine/blue-whale-wardrobe/issues/21' };
+    const extra2 = { ...data.skins[1], id: 'issue-22', name: '春日樱花大肥鱼', category: 'community', categoryLabel: '共创' };
+    await route.fulfill({ json: { ...data, skins: [...data.skins, extra1, extra2] } });
+  });
+  await page.reload();
+  await expect(page.locator('.skin-card')).toHaveCount(6);
+  await expect(page.getByText(/已收录 6 套/u)).toBeVisible();
+  await page.getByRole('button', { name: '共创', exact: true }).click();
+  await expect(page.locator('.skin-card')).toHaveCount(2);
   expect(errors).toEqual([]);
 });
 
