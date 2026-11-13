@@ -12,8 +12,10 @@ import {
   sniffImage,
   submissionData,
   submissionMarkdown,
+  validateImageBuffer,
   validateSubmission,
 } from '../src/domain.js';
+import { getDirectSubmitConfig, isDirectSubmitEnabled } from '../src/site.js';
 
 const catalog = JSON.parse(readFileSync(new URL('../public/skins/catalog.json', import.meta.url), 'utf8'));
 const image = { name: 'reference.png', sha256: 'a'.repeat(64), width: 1600, height: 900, size: 10000 };
@@ -149,4 +151,28 @@ test('HTML作为文本保留，渲染时由React转义而非当作标记', () =>
   const data = submissionData({ ...form, name: '<img src=x onerror=alert(1)>' }, image);
   assert.ok(data.name.startsWith('<img'));
   assert.ok(new URL(issueUrl('https://github.com/Fightingshine/blue-whale-wardrobe', data)).searchParams.get('body').includes('"name": "<img'));
+});
+
+test('validateImageBuffer 可识别真实 PNG 并拒绝伪装格式与过小尺寸', () => {
+  const realPng = readFileSync(new URL('../public/skins/original/reference.png', import.meta.url));
+  const ok = validateImageBuffer(realPng, { mimeType: 'image/png' });
+  assert.equal(ok.width, 2048);
+  assert.equal(ok.height, 1143);
+  assert.throws(() => validateImageBuffer(new TextEncoder().encode('<svg/>'), { mimeType: 'image/svg+xml' }), /不支持 SVG/u);
+  assert.throws(() => validateImageBuffer(new Uint8Array(64), { mimeType: 'image/png' }), /格式不一致/u);
+});
+
+test('submissionMarkdown 传入已上传 HTTPS 原图链接时直接嵌入预览图', () => {
+  const rawUrl = 'https://raw.githubusercontent.com/Fightingshine/blue-whale-wardrobe/abc123/submissions/202611/ref/reference.png';
+  const md = submissionMarkdown(submissionData(form, image), { imageUrl: rawUrl });
+  assert.ok(md.includes(`![学院风大肥鱼 三视图原图](${rawUrl})`));
+  assert.doesNotMatch(md, /【在这里附上图片】/u);
+  assert.ok(md.includes('"schema": "whale-skin-submission/v1"'));
+});
+
+test('直传配置默认关闭且在两项齐备时启用', () => {
+  assert.equal(isDirectSubmitEnabled({ submitApiUrl: '', turnstileSiteKey: '' }), false);
+  assert.equal(isDirectSubmitEnabled({ submitApiUrl: 'https://example.workers.dev', turnstileSiteKey: '' }), false);
+  assert.equal(isDirectSubmitEnabled({ submitApiUrl: 'https://example.workers.dev', turnstileSiteKey: '1x00000000000000000000AA' }), true);
+  assert.equal(typeof getDirectSubmitConfig().submitApiUrl, 'string');
 });
