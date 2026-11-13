@@ -2,7 +2,7 @@
 
 蓝色大肥鱼三视图皮肤图鉴与开源共创投稿站 —— **一起，给大肥鱼换件新衣。**
 
-- **在线图鉴**：[https://fightingshine.github.io/blue-whale-wardrobe/](https://fightingshine.github.io/blue-whale-wardrobe/)
+- **在线图鉴**：[https://blue-chubby-whale.cyou/](https://blue-chubby-whale.cyou/)（GitHub Pages 原址 [fightingshine.github.io/blue-whale-wardrobe](https://fightingshine.github.io/blue-whale-wardrobe/) 会自动跳转）
 - **皮肤投稿**：打开网站点击「投稿我的皮肤」，或使用 [GitHub 皮肤投稿入口](https://github.com/Fightingshine/blue-whale-wardrobe/issues/new?template=skin-submission.md)
 - **权利说明**：网站源代码使用 [MIT 许可](LICENSE)；角色与皮肤三视图权利单独说明，详见 [图片与角色权利说明](ASSET_RIGHTS.md)
 
@@ -46,7 +46,7 @@
 
 ### 2. 在网站填写并前往 GitHub 提交
 
-1. 打开 [大肥鱼衣橱](https://fightingshine.github.io/blue-whale-wardrobe/)，点击「**投稿我的皮肤**」。
+1. 打开 [大肥鱼衣橱](https://blue-chubby-whale.cyou/)，点击「**投稿我的皮肤**」。
 2. 选择本地三视图进行预览与基本规格检查（此时图片仅保留在当前浏览器内存中）。
 3. 填写**皮肤名称**、**作者署名**（昵称或常用 ID 即可，勿提交学号、手机号等个人隐私）与**触发关键词**（多个关键词用逗号或顿号分隔）。
 4. **设计说明**与**素材来源与使用范围**均为**选填**——可直接点选预设标签快速组合，或简单补充配色细节与出处；如希望作品加入每日日报随机轮换，保持对应勾选项开启即可。

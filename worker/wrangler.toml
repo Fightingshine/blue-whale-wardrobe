@@ -5,8 +5,8 @@ compatibility_date = "2026-10-01"
 [vars]
 GITHUB_REPOSITORY = "Fightingshine/blue-whale-wardrobe"
 SUBMISSIONS_BRANCH = "submissions"
-ALLOWED_ORIGINS = "https://fightingshine.github.io,http://127.0.0.1:*,http://localhost:*"
-TURNSTILE_ALLOWED_HOSTS = "fightingshine.github.io,127.0.0.1,localhost"
+ALLOWED_ORIGINS = "https://blue-chubby-whale.cyou,https://www.blue-chubby-whale.cyou,https://fightingshine.github.io,http://127.0.0.1:*,http://localhost:*"
+TURNSTILE_ALLOWED_HOSTS = "blue-chubby-whale.cyou,www.blue-chubby-whale.cyou,fightingshine.github.io,127.0.0.1,localhost"
 
 [[ratelimits]]
 name = "RATE_LIMITER"

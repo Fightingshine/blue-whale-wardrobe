@@ -10,12 +10,12 @@ const baseEnv = {
   SUBMISSIONS_BRANCH: 'submissions',
   GITHUB_TOKEN: 'test-github-token',
   TURNSTILE_SECRET_KEY: 'test-turnstile-secret',
-  ALLOWED_ORIGINS: 'https://fightingshine.github.io,http://127.0.0.1:*,http://localhost:*',
-  TURNSTILE_ALLOWED_HOSTS: 'fightingshine.github.io,127.0.0.1,localhost',
+  ALLOWED_ORIGINS: 'https://blue-chubby-whale.cyou,https://www.blue-chubby-whale.cyou,https://fightingshine.github.io,http://127.0.0.1:*,http://localhost:*',
+  TURNSTILE_ALLOWED_HOSTS: 'blue-chubby-whale.cyou,www.blue-chubby-whale.cyou,fightingshine.github.io,127.0.0.1,localhost',
 };
 
 function makeSubmitRequest({
-  origin = 'https://fightingshine.github.io',
+  origin = 'https://blue-chubby-whale.cyou',
   token = 'ok-token',
   bytes = pngBytes,
   fileName = 'campus.png',
@@ -45,9 +45,12 @@ function makeSubmitRequest({
 }
 
 test('Origin 与 Turnstile 主机名白名单校验', () => {
+  assert.equal(isOriginAllowed('https://blue-chubby-whale.cyou', baseEnv.ALLOWED_ORIGINS), true);
+  assert.equal(isOriginAllowed('https://www.blue-chubby-whale.cyou', baseEnv.ALLOWED_ORIGINS), true);
   assert.equal(isOriginAllowed('https://fightingshine.github.io', baseEnv.ALLOWED_ORIGINS), true);
   assert.equal(isOriginAllowed('http://127.0.0.1:24173', baseEnv.ALLOWED_ORIGINS), true);
   assert.equal(isOriginAllowed('https://evil.example', baseEnv.ALLOWED_ORIGINS), false);
+  assert.equal(isTurnstileHostAllowed('blue-chubby-whale.cyou', baseEnv.TURNSTILE_ALLOWED_HOSTS), true);
   assert.equal(isTurnstileHostAllowed('fightingshine.github.io', baseEnv.TURNSTILE_ALLOWED_HOSTS), true);
   assert.equal(isTurnstileHostAllowed('evil.example', baseEnv.TURNSTILE_ALLOWED_HOSTS), false);
 });
@@ -109,7 +112,7 @@ test('完整直传可初始化 submissions 分支、上传原图并创建兼容�
     const target = String(url);
     calls.push({ method: init.method || 'GET', target });
     if (target.includes('siteverify')) {
-      return new Response(JSON.stringify({ success: true, hostname: 'fightingshine.github.io' }), { status: 200 });
+      return new Response(JSON.stringify({ success: true, hostname: 'blue-chubby-whale.cyou' }), { status: 200 });
     }
     if (target.endsWith('/git/ref/heads/submissions')) {
       return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });

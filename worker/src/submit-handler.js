@@ -10,6 +10,8 @@ const MAX_REQUEST_BYTES = 12 * 1024 * 1024;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const MAX_PIXELS = 24_000_000;
 const EXT_BY_MIME = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+const DEFAULT_ALLOWED_ORIGINS = ['https://blue-chubby-whale.cyou', 'https://www.blue-chubby-whale.cyou', 'https://fightingshine.github.io'];
+const DEFAULT_TURNSTILE_HOSTS = ['blue-chubby-whale.cyou', 'www.blue-chubby-whale.cyou', 'fightingshine.github.io', '127.0.0.1', 'localhost'];
 
 function splitCsv(value, fallback = []) {
   const items = String(value || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -24,7 +26,7 @@ export function isOriginAllowed(origin, allowedConfig) {
   } catch {
     return false;
   }
-  const rules = splitCsv(allowedConfig, ['https://fightingshine.github.io']);
+  const rules = splitCsv(allowedConfig, DEFAULT_ALLOWED_ORIGINS);
   return rules.some(rule => {
     if (rule.endsWith(':*')) {
       const prefix = rule.slice(0, -2);
@@ -37,7 +39,7 @@ export function isOriginAllowed(origin, allowedConfig) {
 export function isTurnstileHostAllowed(hostname, allowedConfig) {
   if (!hostname) return false;
   const normalized = String(hostname).trim().toLowerCase();
-  const allowed = splitCsv(allowedConfig, ['fightingshine.github.io', '127.0.0.1', 'localhost']).map(s => s.toLowerCase());
+  const allowed = splitCsv(allowedConfig, DEFAULT_TURNSTILE_HOSTS).map(s => s.toLowerCase());
   return allowed.includes(normalized);
 }
 
@@ -237,7 +239,7 @@ async function publishSubmissionToGithub({ repo, branch, token, data, bytes, ext
 export async function handleSubmitRequest(request, env, { fetchImpl = fetch, now = new Date() } = {}) {
   const url = new URL(request.url);
   const origin = request.headers.get('Origin') || '';
-  const allowedOrigins = env.ALLOWED_ORIGINS || 'https://fightingshine.github.io';
+  const allowedOrigins = env.ALLOWED_ORIGINS || DEFAULT_ALLOWED_ORIGINS.join(',');
   const cors = corsHeaders(origin, allowedOrigins);
 
   if (request.method === 'GET' && url.pathname === '/health') {
@@ -285,7 +287,7 @@ export async function handleSubmitRequest(request, env, { fetchImpl = fetch, now
     token: String(formData.get('cf-turnstile-response') || '').trim(),
     secret: env.TURNSTILE_SECRET_KEY,
     remoteIp: clientIp,
-    allowedHosts: env.TURNSTILE_ALLOWED_HOSTS || 'fightingshine.github.io,127.0.0.1,localhost',
+    allowedHosts: env.TURNSTILE_ALLOWED_HOSTS || DEFAULT_TURNSTILE_HOSTS.join(','),
     fetchImpl,
   });
   if (!verify.ok) {

@@ -26,7 +26,7 @@
 
 1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Turnstile** → **Add widget**。
 2. 在 **Hostname Management** 添加：
-   - `fightingshine.github.io`
+   - `blue-chubby-whale.cyou` 与 `www.blue-chubby-whale.cyou`（以及兼容过渡期 `fightingshine.github.io`）
    - 本地联调如有需要可临时加 `127.0.0.1` 和 `localhost`
 3. Widget Mode 选择 **Managed**（托管无感/一键验证），创建后记录：
    - **Site Key**（公开可用，供前端渲染组件）
@@ -44,7 +44,7 @@ npx wrangler secret put TURNSTILE_SECRET_KEY
 npx wrangler deploy
 ```
 
-部署完成后终端会打印公网访问地址，例如：`https://blue-whale-wardrobe-submit.<你的子域>.workers.dev`（可访问 `<地址>/health` 验证返回 `{"ok":true}`）。
+部署完成后终端会打印公网访问地址，例如：`https://blue-whale-wardrobe-submit.<你的子域>.workers.dev`；如需免代理国内直连访问，推荐在 Cloudflare Worker **设置 → 域和路由 → 添加自定义域** 绑定自有域名（如 `https://submit.blue-chubby-whale.cyou`），随后访问 `<地址>/health` 验证返回 `{"ok":true}`。
 
 > **提示**：如部署到自己的子域或复用至其他 GitHub 仓库，请同步修改 [`wrangler.toml`](wrangler.toml) 中的 `GITHUB_REPOSITORY`、`ALLOWED_ORIGINS` 与 `TURNSTILE_ALLOWED_HOSTS` 后重新执行 `npx wrangler deploy`。
 
@@ -52,7 +52,7 @@ npx wrangler deploy
 
 打开 GitHub 仓库 **Settings → Secrets and variables → Actions → Variables（注意是 Variables，不是 Secrets）**，新建两个公开变量：
 
-- `VITE_SUBMIT_API_URL`：填写上一步部署得到的 Worker 地址（例如 `https://blue-whale-wardrobe-submit.<你的子域>.workers.dev`，末尾不带斜杠）
+- `VITE_SUBMIT_API_URL`：填写上一步配置的 Worker 自定义域或 `workers.dev` 地址（例如 `https://submit.blue-chubby-whale.cyou`，末尾不带斜杠）
 - `VITE_TURNSTILE_SITE_KEY`：填写 Turnstile 的 **Site Key**
 
 保存后，触发一次 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml) 构建，网页端即自动切换为「完成人机验证后直接提交投稿」，同时保留「GitHub 手动投稿」作为备用通道。
