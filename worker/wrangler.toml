@@ -1,0 +1,17 @@
+name = "blue-whale-wardrobe-submit"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+GITHUB_REPOSITORY = "Fightingshine/blue-whale-wardrobe"
+SUBMISSIONS_BRANCH = "submissions"
+ALLOWED_ORIGINS = "https://fightingshine.github.io,http://127.0.0.1:*,http://localhost:*"
+TURNSTILE_ALLOWED_HOSTS = "fightingshine.github.io,127.0.0.1,localhost"
+
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+
+[ratelimits.simple]
+limit = 3
+period = 60
