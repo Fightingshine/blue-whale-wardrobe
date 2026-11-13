@@ -177,3 +177,93 @@ test('生成验收截图', async ({ page }, info) => {
   await expect(dialog.getByRole('radio', { name: /原创绘制/u })).toHaveAttribute('aria-checked', 'true');
   await page.screenshot({ path: path.join(process.env.QA_DIR, `submission-selected-${info.project.name}.png`), fullPage: false, animations: 'disabled' });
 });
+
+test('启用网页直传时通过人机验证免跳转提交成功并支持失败回退', async ({ page }, info) => {
+  await page.addInitScript(() => {
+    window.__issues = [];
+    window.open = url => {
+      window.__issues.push(url);
+      return null;
+    };
+    window.__WARDROBE_TEST_CONFIG__ = {
+      submitApiUrl: 'https://submit.example.test',
+      turnstileSiteKey: '1x00000000000000000000AA',
+    };
+    window.__turnstileState = { renders: 0, resets: 0, callback: null };
+    window.turnstile = {
+      render(container, options) {
+        window.__turnstileState.renders += 1;
+        window.__turnstileState.callback = options.callback;
+        container.innerHTML = '<button type="button" data-testid="mock-turnstile-pass">完成安全验证</button>';
+        container.querySelector('[data-testid="mock-turnstile-pass"]').addEventListener('click', () => {
+          options.callback('mock-turnstile-token-ok');
+        });
+        return 'widget-1';
+      },
+      reset() {
+        window.__turnstileState.resets += 1;
+      },
+      remove() {},
+    };
+  });
+
+  let mode = 'fail';
+  let capturedBody = '';
+  await page.route('https://submit.example.test/api/submit', async route => {
+    capturedBody = route.request().postDataBuffer()?.toString('latin1') || '';
+    if (mode === 'fail') {
+      await route.fulfill({ status: 429, json: { ok: false, error: '提交太频繁啦，请稍等一分钟后再试。' } });
+      return;
+    }
+    await route.fulfill({
+      status: 201,
+      json: {
+        ok: true,
+        issueNumber: 88,
+        issueUrl: 'https://github.com/Fightingshine/blue-whale-wardrobe/issues/88',
+        imageUrl: 'https://raw.githubusercontent.com/Fightingshine/blue-whale-wardrobe/abc/submissions/ref.png',
+        name: '直传测试大肥鱼',
+      },
+    });
+  });
+
+  await page.reload();
+  await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
+  await expect(dialog.getByRole('button', { name: '直接提交投稿', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('button', { name: 'GitHub 手动投稿', exact: true })).toBeVisible();
+
+  await dialog.getByLabel('选择三视图图片').setInputFiles(reference);
+  await dialog.getByLabel('皮肤名称').fill('直传测试大肥鱼');
+  await dialog.getByLabel('作者署名').fill('直传作者');
+  await dialog.getByLabel('触发关键词').fill('直传风');
+  await dialog.getByRole('checkbox', { name: /我同意将这套三视图公开投稿至 GitHub/u }).check();
+
+  // 未点人机验证时先拦住提示
+  await dialog.getByRole('button', { name: '直接提交投稿', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('人机验证');
+
+  // 完成 Turnstile 后遇到 429 报错能友好提示并重置小部件
+  await dialog.getByTestId('mock-turnstile-pass').click();
+  await dialog.getByRole('button', { name: '直接提交投稿', exact: true }).click();
+  await expect(dialog.getByRole('alert')).toContainText('提交太频繁');
+  expect(await page.evaluate(() => window.__turnstileState.resets)).toBe(1);
+
+  // 重试直传成功并渲染无跳转回执卡
+  mode = 'ok';
+  await dialog.getByTestId('mock-turnstile-pass').click();
+  if (process.env.QA_DIR) {
+    fs.mkdirSync(process.env.QA_DIR, { recursive: true });
+    await page.screenshot({ path: path.join(process.env.QA_DIR, `direct-form-${info.project.name}.png`), fullPage: false, animations: 'disabled' });
+  }
+  await dialog.getByRole('button', { name: '直接提交投稿', exact: true }).click();
+  await expect(dialog.getByText(/投稿已收到，正在等待审核/u)).toBeVisible();
+  if (process.env.QA_DIR) {
+    await page.screenshot({ path: path.join(process.env.QA_DIR, `direct-success-${info.project.name}.png`), fullPage: false, animations: 'disabled' });
+  }
+  await expect(dialog.getByRole('link', { name: /#88/u })).toHaveAttribute('href', 'https://github.com/Fightingshine/blue-whale-wardrobe/issues/88');
+  expect(capturedBody).toContain('mock-turnstile-token-ok');
+  expect(capturedBody).toContain('reference.png');
+  expect(await page.evaluate(() => window.__issues)).toHaveLength(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});

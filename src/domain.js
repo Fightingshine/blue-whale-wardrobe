@@ -163,16 +163,19 @@ export function submissionData(form, image) {
   };
 }
 
-export function submissionMarkdown(data) {
+export function submissionMarkdown(data, options = {}) {
   const styles = data.designTopics?.styles?.join('、') || (data.designTopics?.note ? '见补充想法' : '未额外填写（见三视图原图）');
   const sourceType = data.sourceTopics?.type || (data.sourceTopics?.note ? '见补充备注' : '未额外填写（可在 Issue 中补充）');
   const usages = data.sourceTopics?.usages?.join('、') || '未额外勾选';
+  const safeName = data.name.replace(/[\r\n]/gu, ' ');
+  const imageUrl = typeof options.imageUrl === 'string' && options.imageUrl.startsWith('https://') ? options.imageUrl : '';
+  const imageSection = imageUrl
+    ? `![${safeName} 三视图原图](${imageUrl})\n\n> 该投稿通过网页直接上传提交，原图已校验并暂存；维护者审核确认后打上 \`已收录\` 标签即可自动发布至图鉴。`
+    : `**最后一步：把刚才选择的三视图原图拖到下方，等图片上传完成后点提交就好啦！**\n\n【在这里附上图片】`;
   return `<!-- whale-skin-submission:v1 -->
-## 皮肤投稿：${data.name.replace(/[\r\n]/gu, ' ')}
+## 皮肤投稿：${safeName}
 
-**最后一步：把刚才选择的三视图原图拖到下方，等图片上传完成后点提交就好啦！**
-
-【在这里附上图片】
+${imageSection}
 
 ### 投稿速览
 - **作者署名**：${data.author}
@@ -207,14 +210,36 @@ export function issueUrl(repositoryUrl, data) {
   return url.href;
 }
 
+export function validateImageBuffer(bytes, { maxUploadBytes = 10 * 1024 * 1024, maxPixels = 24_000_000, mimeType = '' } = {}) {
+  if (mimeType && !IMAGE_TYPES.has(mimeType)) {
+    throw new Error('暂仅支持 PNG、JPG 或 WebP 图片（不支持 SVG、GIF 或压缩包）。');
+  }
+  const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (b.length > maxUploadBytes || b.length < 24) {
+    throw new Error('图片需为有效文件，且大小不超过 10 MB。');
+  }
+  const actualType = sniffImage(b);
+  if (mimeType && actualType !== mimeType) {
+    throw new Error('文件内容与图片格式不一致，请换一张重新导出的图片试试。');
+  }
+  if (!actualType || !IMAGE_TYPES.has(actualType)) {
+    throw new Error('暂仅支持 PNG、JPG 或 WebP 图片（不支持 SVG、GIF 或压缩包）。');
+  }
+  const header = imageDimensions(b);
+  if (header.width < 1 || header.height < 1 || header.width > 10000 || header.height > 10000 || header.width * header.height > maxPixels) {
+    throw new Error('图片分辨率过高，建议控制在 2400 万像素以内。');
+  }
+  if (header.width < 600 || header.height < 300 || header.width < header.height) {
+    throw new Error('三视图需要是横向拼图（宽大于高，且至少 600 × 300 像素）。');
+  }
+  return { mimeType: actualType, width: header.width, height: header.height, bytes: b.length };
+}
+
 export async function readLocalImage(file, limits) {
   if (!file || !IMAGE_TYPES.has(file.type)) throw new Error('暂仅支持 PNG、JPG 或 WebP 图片（不支持 SVG、GIF 或压缩包）。');
   if (file.size > limits.maxUploadBytes || file.size < 24) throw new Error('图片需为有效文件，且大小不超过 10 MB。');
   const bytes = await file.arrayBuffer();
-  const actualType = sniffImage(bytes);
-  if (!actualType || actualType !== file.type) throw new Error('文件内容与图片格式不一致，请换一张重新导出的图片试试。');
-  const header = imageDimensions(bytes);
-  if (header.width < 1 || header.height < 1 || header.width > 10000 || header.height > 10000 || header.width * header.height > limits.maxPixels) throw new Error('图片分辨率过高或无效，建议控制在 2400 万像素以内。');
+  validateImageBuffer(bytes, { maxUploadBytes: limits.maxUploadBytes, maxPixels: limits.maxPixels, mimeType: file.type });
   const bitmap = await createImageBitmap(file).catch(() => { throw new Error('这张图片暂时无法读取，可以重新导出 PNG 或 JPG 再试一次。'); });
   const { width, height } = bitmap;
   bitmap.close();
