@@ -105,6 +105,49 @@ test('伪装图片文件头无法通过服务端检查', async () => {
   assert.equal(res.status, 400);
 });
 
+test('直传接口支持竖图与方图设定图并拒绝低于 300×300 的过小图片', async () => {
+  const withDims = (width, height) => {
+    const copy = new Uint8Array(pngBytes);
+    const view = new DataView(copy.buffer, copy.byteOffset, copy.byteLength);
+    view.setUint32(16, width);
+    view.setUint32(20, height);
+    return copy;
+  };
+  const mockFetch = async (url, init = {}) => {
+    const target = String(url);
+    if (target.includes('siteverify')) {
+      return new Response(JSON.stringify({ success: true, hostname: 'blue-chubby-whale.cyou' }), { status: 200 });
+    }
+    if (target.endsWith('/git/ref/heads/submissions')) {
+      return new Response(JSON.stringify({ ref: 'refs/heads/submissions' }), { status: 200 });
+    }
+    if (target.includes('/contents/submissions/')) {
+      return new Response(JSON.stringify({ commit: { sha: 'portrait_sha_1234' } }), { status: 201 });
+    }
+    if (target.endsWith('/issues')) {
+      return new Response(JSON.stringify({ number: 99, html_url: 'https://github.com/Fightingshine/blue-whale-wardrobe/issues/99' }), { status: 201 });
+    }
+    throw new Error(`意外请求: ${target}`);
+  };
+  const rateEnv = { ...baseEnv, RATE_LIMITER: { limit: async () => ({ success: true }) } };
+
+  const tooSmall = await handleSubmitRequest(
+    makeSubmitRequest({ bytes: withDims(200, 400), fileName: 'tiny.png' }),
+    rateEnv,
+    { fetchImpl: mockFetch },
+  );
+  assert.equal(tooSmall.status, 400);
+
+  const portraitRes = await handleSubmitRequest(
+    makeSubmitRequest({ bytes: withDims(720, 1280), fileName: 'portrait.png' }),
+    rateEnv,
+    { fetchImpl: mockFetch, now: new Date('2026-11-14T12:00:00Z') },
+  );
+  assert.equal(portraitRes.status, 201);
+  const portraitData = await portraitRes.json();
+  assert.equal(portraitData.issueNumber, 99);
+});
+
 test('完整直传可初始化 submissions 分支、上传原图并创建兼容自动收录脚本的 Issue', async () => {
   const calls = [];
   let createdIssuePayload = null;

@@ -2,18 +2,18 @@
 <html lang="zh-CN">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>大肥鱼皮肤库</title><link rel="stylesheet" href="./style.css"><script src="./app.js" defer></script></head>
 <body><main>
-  <header><div><span class="eyebrow">🐳 蓝色大肥鱼 · 共创衣橱</span><h1>给小蓝鲸挑件新衣</h1><p>审核过的三视图自动入库，画图时带上关键词，就能穿上它。</p></div><div class="actions"><button id="refresh" class="secondary">刷新</button><button id="sync">同步已审核皮肤</button></div></header>
+  <header><div><span class="eyebrow">🐳 蓝色大肥鱼 · 共创衣橱</span><h1>给小蓝鲸挑件新衣</h1><p>审核过的设定图自动入库，画图时带上关键词，就能穿上它。</p></div><div class="actions"><button id="refresh" class="secondary">刷新</button><button id="sync">同步已审核皮肤</button></div></header>
   <div id="notice" role="status" hidden></div>
   <section class="sync-strip" aria-label="同步状态"><span id="sync-state">正在读取衣橱…</span><span id="sync-time"></span></section>
   <div class="workspace"><aside><label class="search"><span>找一套皮肤</span><input id="search" type="search" placeholder="名称、关键词或编号"></label><div class="shelf-heading"><h2>衣橱</h2><span id="count"></span></div><div id="list"></div></aside>
   <section class="detail"><div id="empty">先从左边选择一套皮肤。</div><div id="editor" hidden>
     <div class="title-row"><div><span id="skin-source" class="eyebrow"></span><h2 id="skin-name"></h2></div><span id="skin-state" class="badge"></span></div>
-    <figure><img id="preview" alt="皮肤正面、侧面、背面参考图"><figcaption id="reference-state"></figcaption></figure>
+    <figure><img id="preview" alt="皮肤设定参考图"><figcaption id="reference-state"></figcaption></figure>
     <form id="form"><div class="switches"><label><input id="enabled" type="checkbox">启用这套皮肤</label><label><input id="daily" type="checkbox">加入日报随机轮换</label></div>
     <p id="daily-note" class="muted"></p><div class="fields"><label>触发关键词<input id="keywords" required placeholder="用逗号分隔，例如：短发，短发大肥鱼"></label><label>轮换基础权重<input id="weight" type="number" min="0.01" max="100" step="0.01" required></label></div>
     <label>外观补充说明<textarea id="appearance" rows="3" maxlength="2000" placeholder="以参考图为准，可补充发型、服装或画风细节"></textarea></label>
     <p class="muted">普通画图默认原装。上一套成功生成的皮肤下次不参与抽取，之后逐步恢复权重。</p>
-    <div class="actions"><button type="submit" id="save">保存设置</button><button type="button" id="reset" class="secondary">恢复来源设置</button><button type="button" id="download" class="text-button">下载三视图</button></div></form>
+    <div class="actions"><button type="submit" id="save">保存设置</button><button type="button" id="reset" class="secondary">恢复来源设置</button><button type="button" id="download" class="text-button">下载设定图</button></div></form>
     <details><summary>来源与原图校验</summary><p id="attribution"></p><code id="checksum"></code></details>
   </div></section></div>
   <footer>自动同步只读取图鉴和原图，不消耗模型 Token。撤销收录会停用皮肤，历史生成记录与原图继续保留。</footer>

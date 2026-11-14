@@ -124,8 +124,9 @@ class ValidationTests(unittest.TestCase):
 
     def test_invalid_dimensions_hash_size_rejected(self):
         for key, value in [
-            ("width", 500),
-            ("height", 700),
+            ("width", 299),
+            ("height", 299),
+            ("width", 10001),
             ("bytes", 11 * 1024 * 1024),
             ("sha256", "../bad"),
             ("width", True),
@@ -134,6 +135,18 @@ class ValidationTests(unittest.TestCase):
                 raw = submission()
                 raw["reference"][key] = value
                 validate_catalog(catalog(raw))
+
+    def test_portrait_and_square_design_sheets_accepted(self):
+        for size in ((540, 900), (480, 480)):
+            with self.subTest(size=size):
+                out = io.BytesIO()
+                Image.new("RGB", size, "teal").save(out, "PNG")
+                img_bytes = out.getvalue()
+                raw = submission(img_bytes)
+                raw["reference"]["width"], raw["reference"]["height"] = size
+                row = validate_catalog(catalog(raw))[0]
+                self.assertEqual((row["reference"]["width"], row["reference"]["height"]), size)
+                self.assertEqual(verify_image(img_bytes, row["reference"]), img_bytes)
 
     def test_tampered_picture_rejected(self):
         with self.assertRaises(SkinError):

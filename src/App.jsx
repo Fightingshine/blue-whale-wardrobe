@@ -60,10 +60,10 @@ function Detail({ skin, onClose, onCopy }) {
   const [copied, setCopied] = useState(false);
   const description = displayDescription(skin.description);
   const appearance = displayDescription(skin.appearance);
-  return <Modal title={`${skin.name}三视图`} onClose={onClose} className="detail-dialog">
+  return <Modal title={`${skin.name}设定图`} onClose={onClose} className="detail-dialog">
     <div className="detail-heading"><h2>{skin.name}</h2>{description && <p>{description}</p>}</div>
-    <div className="detail-image"><img src={image} alt={`${skin.name}完整正面、侧面、背面三视图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} /></div>
-    <ViewLabels />
+    <div className="detail-image"><img src={image} alt={`${skin.name}设定图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} /></div>
+    {skin.legacy && <ViewLabels />}
     <div className="detail-body">
       <div>
         <h3>{appearance ? '看清这一套的细节' : '触发关键词'}</h3>
@@ -95,10 +95,10 @@ function ViewLabels() {
   return <div className="view-labels" aria-label="三视图顺序"><span>正面</span><span>侧面</span><span>背面</span></div>;
 }
 
-const VIEW_GUIDES = [
-  { name: '正面', line1: '全身居中展示', line2: '看清主配色与正脸' },
-  { name: '侧面', line1: '与正面等高', line2: '展示侧裙与小鲸尾' },
-  { name: '背面', line1: '三面服装统一', line2: '补全背饰与发尾' },
+const SHEET_GUIDES = [
+  { name: '单张立绘', line1: '正面或斜侧全身', line2: '看清配色与轮廓' },
+  { name: '细节设定', line1: '可附配饰拆图', line2: '补全头饰与鲸尾' },
+  { name: '多视角图', line1: '支持正侧背拼图', line2: '横竖方构图不限' },
 ];
 
 const emptyForm = {
@@ -277,7 +277,7 @@ function Submission({ onClose, template, onCopy }) {
     if (!new URL(url).searchParams.get('body').includes('whale-skin-submission/v1')) {
       setFeedback('说明文字较长，已为你打开简短模板；请点左侧「复制投稿说明」粘贴过去，并把原图拖进正文框。');
     } else {
-      setFeedback('已在新标签页为你准备好 GitHub 投稿页，把刚才选好的三视图原图拖进正文框就能发布啦！');
+      setFeedback('已在新标签页为你准备好 GitHub 投稿页，把刚才选好的设定图原图拖进正文框就能发布啦！');
     }
     window.open(url, '_blank', 'noopener,noreferrer');
   }
@@ -287,7 +287,7 @@ function Submission({ onClose, template, onCopy }) {
     const data = getData();
     if (!data) return;
     if (!fileRef.current) {
-      setError('请先选择一张三视图图片。');
+      setError('请先选择一张设定图。');
       return;
     }
     if (!turnstileToken) {
@@ -341,7 +341,7 @@ function Submission({ onClose, template, onCopy }) {
             <a href={submitResult.issueUrl} target="_blank" rel="noreferrer">查看投稿 Issue #{submitResult.issueNumber} <Icon name="external" size={14} /></a>
           )}
         </div>
-        <p className="success-note">维护者确认三视图、署名与使用范围并打上「已收录」标签后，作品就会自动出现在图鉴首页。</p>
+        <p className="success-note">维护者确认设定图、署名与使用范围并打上「已收录」标签后，作品就会自动出现在图鉴首页。</p>
         <div className="button-row success-actions">
           <button type="button" className="button secondary" onClick={resetAnother}>继续投递下一套</button>
           <button type="button" className="button primary" onClick={onClose}>返回皮肤图鉴</button>
@@ -354,7 +354,7 @@ function Submission({ onClose, template, onCopy }) {
     <div className="submission-heading">
       <div className="small-brand"><WhaleMark /><span>大肥鱼衣橱</span></div>
       <h2>把你的新衣，放进衣橱。</h2>
-      <p>{directEnabled ? '选好三视图并完成人机验证，直接在网页就能完成投稿' : '挑好三视图并点选灵感标签，去 GitHub 附上原图就能加入大家的图鉴啦'}</p>
+      <p>{directEnabled ? '选好设定图并完成人机验证，直接在网页就能完成投稿' : '挑好设定图并点选灵感标签，去 GitHub 附上原图就能加入大家的图鉴啦'}</p>
     </div>
 
     <form onSubmit={directEnabled ? submitDirect : openGithub} noValidate>
@@ -366,32 +366,32 @@ function Submission({ onClose, template, onCopy }) {
             onDragLeave={() => setDragging(false)}
             onDrop={e => { e.preventDefault(); setDragging(false); choose(e.dataTransfer.files[0]); }}
           >
-            <input ref={input} id="reference-file" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => choose(e.target.files[0])} aria-label="选择三视图图片" />
+            <input ref={input} id="reference-file" type="file" accept="image/png,image/jpeg,image/webp" onChange={e => choose(e.target.files[0])} aria-label="选择设定图图片" />
             <button type="button" className="upload-trigger" onClick={() => input.current.click()} disabled={loading || submitting}>
               <Icon name={image ? 'check' : 'upload'} size={36} />
               <span>
-                {loading ? '正在检查图片…' : image ? '更换一张三视图' : '选择或拖入三视图'}
-                <small>{image ? `${image.width} × ${image.height} · ${(image.size / 1024 / 1024).toFixed(2)} MB` : 'PNG / JPG / WebP · 10 MB 以内横向拼图'}</small>
+                {loading ? '正在检查图片…' : image ? '更换一张设定图' : '选择或拖入设定图'}
+                <small>{image ? `${image.width} × ${image.height} · ${(image.size / 1024 / 1024).toFixed(2)} MB` : 'PNG / JPG / WebP · 至少 300×300 · 10 MB 以内（横竖不限）'}</small>
               </span>
             </button>
           </div>
 
           <div className={`upload-preview ${image ? 'has-image' : 'template-preview'}`}>
-            {!image && <span className="preview-badge">排版示范 · 选图后实时预览</span>}
-            <img src={image?.url || assetUrl(template.reference.path)} alt={image ? '你选择的三视图，仅本地预览' : '三视图横向排版示例'} />
+            {!image && <span className="preview-badge">格式示范 · 选图后实时预览</span>}
+            <img src={image?.url || assetUrl(template.reference.path)} alt={image ? '你选择的设定图，仅本地预览' : '设定图格式示例'} />
           </div>
 
           <p className={`local-only ${image ? 'is-ready' : ''}`}>
             <Icon name={image ? 'check' : 'info'} size={15} />
             {image
               ? (directEnabled
-                ? `三视图已检查就绪 · 可直接提交 (${cleanText(image.name, 30)})`
+                ? `设定图已检查就绪 · 可直接提交 (${cleanText(image.name, 30)})`
                 : `本地预览已就绪 · 待会在 GitHub 拖入原图即可 (${cleanText(image.name, 30)})`)
-              : '三视图排版示范 · 选好图片后可在这里实时预览'}
+              : '设定图参考示范 · 选好图片后可在这里实时预览'}
           </p>
 
           <div className="three-guides">
-            {VIEW_GUIDES.map(item => (
+            {SHEET_GUIDES.map(item => (
               <div key={item.name}>
                 <svg className="figure-outline" width="24" height="38" viewBox="0 0 28 42" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
                   <circle cx="14" cy="10" r="6" />
@@ -525,7 +525,7 @@ function Submission({ onClose, template, onCopy }) {
             </label>
             <label className="check-label">
               <input type="checkbox" checked={form.confirmed} onChange={e => { setForm(prev => ({ ...prev, confirmed: e.target.checked })); setError(''); }} />
-              <span>{directEnabled ? '我同意将这套三视图公开投稿至 GitHub 图鉴，原图版权归创作者所有' : '我同意将这套三视图公开投稿至 GitHub，并会在跳转页附上原图'}</span>
+              <span>{directEnabled ? '我同意将这套设定图公开投稿至 GitHub 图鉴，原图版权归创作者所有' : '我同意将这套设定图公开投稿至 GitHub，并会在跳转页附上原图'}</span>
             </label>
           </div>
         </div>
@@ -572,7 +572,7 @@ function Submission({ onClose, template, onCopy }) {
         <details className="draft-details">
           <summary>查看或手动复制投稿说明</summary>
           <textarea aria-label="投稿说明文本" value={draft} readOnly rows={8} onFocus={e => e.target.select()} />
-          <p>若浏览器没有自动带入内容，可全选上面说明粘贴到 GitHub 正文，记得顺手把三视图原图也拖进去。</p>
+          <p>若浏览器没有自动带入内容，可全选上面说明粘贴到 GitHub 正文，记得顺手把设定图原图也拖进去。</p>
         </details>
       )}
     </form>
@@ -580,21 +580,21 @@ function Submission({ onClose, template, onCopy }) {
 }
 
 function Guide({ onClose, onContribute, template }) {
-  return <Modal title="三视图投稿规范" onClose={onClose} className="guide-dialog">
+  return <Modal title="设定图投稿规范" onClose={onClose} className="guide-dialog">
     <div className="detail-heading">
-      <h2>三面看清，才是一套完整的新衣。</h2>
-      <p>把正面、侧面、背面拼成一张横向图，小蓝鲸就能更完整地记住整套穿搭。</p>
+      <h2>只要看得清造型，就是一套好设定。</h2>
+      <p>无论是正侧背三视图、全身立绘，还是带有配饰拆分的服装设定图，都能让小蓝鲸记住新穿搭。</p>
     </div>
-    <img className="guide-reference" src={assetUrl(template.reference.path)} alt="原装大肥鱼三视图格式示例" />
+    <img className="guide-reference" src={assetUrl(template.reference.path)} alt="原装大肥鱼设定图格式示例" />
     <ViewLabels />
     <div className="guide-grid">
       <section>
         <h3>保留她是谁</h3>
-        <p>深蓝长发与浅蓝发梢、蓝眼、侧鳍、鲸尾和 Q 版比例。服装风格可以天马行空，一眼认得出是她就好。</p>
+        <p>深蓝长发与浅蓝发梢、蓝眼、侧鳍、鲸尾和 Q 版比例。服装风格与构图形式都可以天马行空，一眼认得出是她就好。</p>
       </section>
       <section>
-        <h3>三面是一套设计</h3>
-        <p>建议白底、全身、三面等高；衣服配色和饰品位置在正面、侧面、背面尽量保持一致，小鞋子和鲸尾也要完整露出来哦。</p>
+        <h3>横竖构图都可以</h3>
+        <p>正面全身立绘、带饰品细节拆图或传统三视图都欢迎；建议保留清晰轮廓与主配色，避免重要服饰被裁切或遮挡。</p>
       </section>
       <section>
         <h3>署名与参考范围（选填）</h3>
@@ -602,12 +602,12 @@ function Guide({ onClose, onContribute, template }) {
       </section>
       <section>
         <h3>轻松加入衣橱</h3>
-        <p>在网页填好信息并去 GitHub 附上原图提交后，维护者打上「已收录」标签就会自动展示进图鉴，收录数量无上限。</p>
+        <p>在网页选好图片并提交投稿后，维护者打上「已收录」标签就会自动展示进图鉴，收录数量无上限。</p>
       </section>
     </div>
     <div className="next-step">
       <Icon name="info" />
-      <span>小提示：支持 PNG、JPG、WebP（10 MB 以内横向图），点击左下方即可下载原装参考图直接描改穿搭。</span>
+      <span>小提示：支持 PNG、JPG、WebP（至少 300 × 300 像素、10 MB 以内，横图竖图皆可），点击左下方即可下载原装设定图直接描改穿搭。</span>
     </div>
     <div className="button-row guide-buttons">
       <a className="button secondary" href={assetUrl(template.reference.path)} download><Icon name="download" />下载参考图</a>
@@ -672,7 +672,7 @@ export default function App() {
           <div className="hero-copy">
             <h1 id="hero-title"><span>一起，</span><span>给大肥鱼换件新衣。</span></h1>
             <svg className="hero-line" viewBox="0 0 370 50" aria-hidden="true"><path d="M2 26C75-13 117 55 201 31s102 17 166-13" fill="none" stroke="#bed2fb" strokeWidth="3" /><path d="M303 12c12-10 24 2 28 12 10 4 16-1 20-6-2 19-25 22-41 11-6-4-8-11-7-17Z" fill="#9dbbf4" /><circle cx="316" cy="18" r="1.5" fill="white" /><path d="m350 18 10-9 1 11" fill="#9dbbf4" /></svg>
-            <p>画下正面、侧面与背面，<br className="mobile-break" />把你的灵感放进共同的衣橱。</p>
+            <p>各类服装设定图都可以，<br className="mobile-break" />把你的灵感放进共同的衣橱。</p>
             <div className="hero-actions">
               <button className="button primary" onClick={() => open('submission')}><Icon name="upload" />投稿我的皮肤</button>
               <button className="guide-link" onClick={() => open('guide')}>查看投稿规范 <Icon name="arrow" size={17} /></button>
@@ -680,8 +680,8 @@ export default function App() {
           </div>
           <div className="featured-skin">
             <div className="featured-art">
-              <button className="art-button" onClick={() => open('detail', original)} aria-label="查看原装大肥鱼完整三视图">
-                <img src={assetUrl(original.reference.path)} alt="原装大肥鱼正面、侧面与背面三视图" fetchPriority="high" />
+              <button className="art-button" onClick={() => open('detail', original)} aria-label="查看原装大肥鱼完整设定图">
+                <img src={assetUrl(original.reference.path)} alt="原装大肥鱼设定图（正面、侧面与背面）" fetchPriority="high" />
               </button>
               <ViewLabels />
             </div>
@@ -689,7 +689,7 @@ export default function App() {
               <h2>原装大肥鱼</h2>
               <span className="short-rule" />
               <p>深蓝女仆裙与白色鲸鱼围裙，柔软长发、蓝眼和鲸尾。每套新衣，都从熟悉的她开始。</p>
-              <button className="button secondary" onClick={() => open('detail', original)}><Icon name="eye" />查看三视图</button>
+              <button className="button secondary" onClick={() => open('detail', original)}><Icon name="eye" />查看设定图</button>
               <a className="button secondary lighter" href={assetUrl(original.reference.path)} download><Icon name="download" />下载原图</a>
             </div>
           </div>
@@ -715,13 +715,13 @@ export default function App() {
             const description = displayDescription(skin.description);
             return (
               <article className="skin-card" key={skin.id}>
-                <button className="card-art art-button" onClick={() => open('detail', skin)} aria-label={`查看${skin.name}三视图`}>
-                  <img src={assetUrl(skin.reference.path)} alt={`${skin.name}三视图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} loading="lazy" />
+                <button className="card-art art-button" onClick={() => open('detail', skin)} aria-label={`查看${skin.name}设定图`}>
+                  <img src={assetUrl(skin.reference.path)} alt={`${skin.name}设定图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} loading="lazy" />
                 </button>
                 <div className="card-caption">
                   <h3>{skin.name}</h3>
                   {description && <p>{description}</p>}
-                  <button className="card-link" onClick={() => open('detail', skin)}>查看三视图 <Icon name="arrow" size={18} /></button>
+                  <button className="card-link" onClick={() => open('detail', skin)}>查看设定图 <Icon name="arrow" size={18} /></button>
                 </div>
               </article>
             );
@@ -743,7 +743,7 @@ export default function App() {
         <p><a href={`${SITE.github}/blob/main/LICENSE`} target="_blank" rel="noreferrer">代码开源</a><b>·</b>社区共创收录<b>·</b><a href={`${SITE.github}/blob/main/ASSET_RIGHTS.md`} target="_blank" rel="noreferrer">图片署名与权利说明</a></p>
         <span />
       </div>
-      <p className="footer-sub">三视图均在你的设备本地预览；原图、作者署名与使用范围随 GitHub 投稿一并留存，欢迎补充历史皮肤资料。</p>
+      <p className="footer-sub">设定图均在你的设备本地预览；原图、作者署名与使用范围随 GitHub 投稿一并留存，欢迎补充历史皮肤资料。</p>
       <Wave />
     </footer>
     {modal?.type === 'detail' && <Detail skin={modal.skin} onClose={close} onCopy={copy} />}

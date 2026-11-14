@@ -2,8 +2,42 @@ import { test, expect } from '@playwright/test';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
+import zlib from 'node:zlib';
 
 const reference = fileURLToPath(new URL('../../public/skins/original/reference.png', import.meta.url));
+
+function crc32(buf) {
+  let crc = 0xffffffff;
+  for (const byte of buf) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function pngChunk(type, data) {
+  const payload = Buffer.concat([Buffer.from(type, 'ascii'), data]);
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length, 0);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(payload), 0);
+  return Buffer.concat([len, payload, crc]);
+}
+
+function makePng(width, height) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  const raw = Buffer.alloc((1 + width) * height, 220);
+  for (let y = 0; y < height; y += 1) raw[y * (1 + width)] = 0;
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', zlib.deflateSync(raw)),
+    pngChunk('IEND', Buffer.alloc(0)),
+  ]);
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -29,8 +63,8 @@ test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({
   await page.route('**/skins/catalog.json', async route => {
     const res = await route.fetch();
     const data = await res.json();
-    const extra1 = { ...data.skins[0], id: 'issue-21', name: '海盐水手大肥鱼', category: 'community', categoryLabel: '共创', issueUrl: 'https://github.com/Fightingshine/blue-whale-wardrobe/issues/21' };
-    const extra2 = { ...data.skins[1], id: 'issue-22', name: '春日樱花大肥鱼', category: 'community', categoryLabel: '共创', description: '', appearance: '' };
+    const extra1 = { ...data.skins[0], legacy: false, id: 'issue-21', name: '海盐水手大肥鱼', category: 'community', categoryLabel: '共创', issueUrl: 'https://github.com/Fightingshine/blue-whale-wardrobe/issues/21' };
+    const extra2 = { ...data.skins[1], legacy: false, id: 'issue-22', name: '春日樱花大肥鱼', category: 'community', categoryLabel: '共创', description: '', appearance: '' };
     await route.fulfill({ json: { ...data, skins: [...data.skins, extra1, extra2] } });
   });
   await page.reload();
@@ -40,19 +74,21 @@ test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({
   await expect(page.locator('.skin-card')).toHaveCount(2);
   const emptyCard = page.locator('.skin-card', { hasText: '春日樱花大肥鱼' });
   await expect(emptyCard.locator('.card-caption p')).toHaveCount(0);
-  await emptyCard.getByRole('button', { name: '查看春日樱花大肥鱼三视图', exact: true }).click();
-  const emptyDetail = page.getByRole('dialog', { name: '春日樱花大肥鱼三视图' });
+  await emptyCard.getByRole('button', { name: '查看春日樱花大肥鱼设定图', exact: true }).click();
+  const emptyDetail = page.getByRole('dialog', { name: '春日樱花大肥鱼设定图' });
   await expect(emptyDetail.locator('.detail-heading p')).toHaveCount(0);
+  await expect(emptyDetail.locator('.view-labels')).toHaveCount(0);
   await expect(emptyDetail.getByRole('heading', { name: '触发关键词' })).toBeVisible();
   await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });
 
-test('完整三视图与下载入口及关闭弹窗', async ({ page }) => {
-  await page.getByRole('button', { name: '查看冬装大肥鱼三视图', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '冬装大肥鱼三视图' });
+test('完整设定图与下载入口及关闭弹窗', async ({ page }) => {
+  await page.getByRole('button', { name: '查看冬装大肥鱼设定图', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '冬装大肥鱼设定图' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByAltText('冬装大肥鱼完整正面、侧面、背面三视图')).toBeVisible();
+  await expect(dialog.getByAltText('冬装大肥鱼设定图')).toBeVisible();
+  await expect(dialog.locator('.view-labels')).toBeVisible();
   const download = page.waitForEvent('download');
   await dialog.getByRole('link', { name: '下载原图' }).click();
   expect((await download).suggestedFilename()).toBe('reference.jpg');
@@ -73,9 +109,9 @@ test('通过选题点选完成投稿并生成安全的GitHub草稿', async ({ pa
   const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
 
   await dialog.getByRole('button', { name: '去 GitHub 附图投稿', exact: true }).click();
-  await expect(dialog.getByRole('alert')).toContainText('三视图');
+  await expect(dialog.getByRole('alert')).toContainText('设定图');
 
-  await dialog.getByLabel('选择三视图图片').setInputFiles(reference);
+  await dialog.getByLabel('选择设定图图片').setInputFiles(reference);
   await expect(dialog.getByText(/本地预览已就绪/u)).toBeVisible();
 
   await dialog.getByLabel('皮肤名称').fill('学院风大肥鱼');
@@ -95,7 +131,7 @@ test('通过选题点选完成投稿并生成安全的GitHub草稿', async ({ pa
   await scopeChip.click();
   await expect(scopeChip).toHaveAttribute('aria-pressed', 'true');
 
-  await dialog.getByRole('checkbox', { name: /我同意将这套三视图公开投稿至 GitHub/u }).check();
+  await dialog.getByRole('checkbox', { name: /我同意将这套设定图公开投稿至 GitHub/u }).check();
   await dialog.getByRole('button', { name: '去 GitHub 附图投稿', exact: true }).click();
 
   const urls = await page.evaluate(() => window.__issues);
@@ -114,7 +150,7 @@ test('通过选题点选完成投稿并生成安全的GitHub草稿', async ({ pa
 
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
-  await expect(page.getByText(/三视图排版示范/u)).toBeVisible();
+  await expect(page.getByText(/设定图参考示范/u)).toBeVisible();
 });
 
 test('设计说明和素材来源留空不选也能顺利提交', async ({ page }) => {
@@ -128,27 +164,58 @@ test('设计说明和素材来源留空不选也能顺利提交', async ({ page 
   await page.reload();
   await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
-  await dialog.getByLabel('选择三视图图片').setInputFiles(reference);
+  await dialog.getByLabel('选择设定图图片').setInputFiles(reference);
   await dialog.getByLabel('皮肤名称').fill('水手大肥鱼');
   await dialog.getByLabel('作者署名').fill('省心同学');
   await dialog.getByLabel('触发关键词').fill('水手装');
-  await dialog.getByRole('checkbox', { name: /我同意将这套三视图公开投稿至 GitHub/u }).check();
+  await dialog.getByRole('checkbox', { name: /我同意将这套设定图公开投稿至 GitHub/u }).check();
   await dialog.getByRole('button', { name: '去 GitHub 附图投稿', exact: true }).click();
   const urls = await page.evaluate(() => window.__issues);
   expect(urls).toHaveLength(1);
   expect(new URL(urls[0]).searchParams.get('body')).toContain('未额外填写');
 });
 
+test('支持竖图与方图设定图上传预览并拒绝过小图片', async ({ page }) => {
+  await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
+
+  await dialog.getByLabel('选择设定图图片').setInputFiles({
+    name: 'too-small.png',
+    mimeType: 'image/png',
+    buffer: makePng(200, 200),
+  });
+  await expect(dialog.getByRole('alert')).toContainText('至少 300 × 300');
+
+  await dialog.getByLabel('选择设定图图片').setInputFiles({
+    name: 'portrait-sheet.png',
+    mimeType: 'image/png',
+    buffer: makePng(540, 900),
+  });
+  await expect(dialog.getByText('540 × 900')).toBeVisible();
+  await expect(dialog.getByText(/本地预览已就绪/u)).toBeVisible();
+  const previewImg = dialog.locator('.upload-preview img');
+  await expect.poll(() => previewImg.evaluate(img => img.naturalWidth)).toBe(540);
+  await expect.poll(() => previewImg.evaluate(img => img.naturalHeight)).toBe(900);
+
+  await dialog.getByLabel('选择设定图图片').setInputFiles({
+    name: 'square-sheet.png',
+    mimeType: 'image/png',
+    buffer: makePng(480, 480),
+  });
+  await expect(dialog.getByText('480 × 480')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+});
+
 test('拒绝SVG与损坏文件', async ({ page }) => {
   await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
-  await dialog.getByLabel('选择三视图图片').setInputFiles({
+  await dialog.getByLabel('选择设定图图片').setInputFiles({
     name: 'unsafe.svg',
     mimeType: 'image/svg+xml',
     buffer: Buffer.from('<svg/>'),
   });
   await expect(dialog.getByRole('alert')).toContainText('不支持 SVG');
-  await dialog.getByLabel('选择三视图图片').setInputFiles({
+  await dialog.getByLabel('选择设定图图片').setInputFiles({
     name: 'fake.png',
     mimeType: 'image/png',
     buffer: Buffer.from('not an actual png image at all'),
@@ -158,8 +225,8 @@ test('拒绝SVG与损坏文件', async ({ page }) => {
 
 test('规范弹窗与手机布局无横向溢出', async ({ page }) => {
   await page.getByRole('button', { name: '查看投稿规范', exact: true }).click();
-  const dialog = page.getByRole('dialog', { name: '三视图投稿规范' });
-  await expect(dialog.getByRole('heading', { name: '三面看清，才是一套完整的新衣。' })).toBeVisible();
+  const dialog = page.getByRole('dialog', { name: '设定图投稿规范' });
+  await expect(dialog.getByRole('heading', { name: '只要看得清造型，就是一套好设定。' })).toBeVisible();
   await dialog.getByRole('button', { name: '开始投稿' }).click();
   await expect(page.getByRole('dialog', { name: '皮肤投稿', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -177,7 +244,7 @@ test('生成验收截图', async ({ page }, info) => {
   await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
   await page.screenshot({ path: path.join(process.env.QA_DIR, `submission-idle-${info.project.name}.png`), fullPage: false, animations: 'disabled' });
-  await dialog.getByLabel('选择三视图图片').setInputFiles(reference);
+  await dialog.getByLabel('选择设定图图片').setInputFiles(reference);
   await expect(dialog.getByText(/本地预览已就绪/u)).toBeVisible();
   await dialog.getByRole('button', { name: '学院制服' }).click();
   await dialog.getByRole('radio', { name: /原创绘制/u }).click();
@@ -240,11 +307,11 @@ test('启用网页直传时通过人机验证免跳转提交成功并支持失�
   await expect(dialog.getByRole('button', { name: '直接提交投稿', exact: true })).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'GitHub 手动投稿', exact: true })).toBeVisible();
 
-  await dialog.getByLabel('选择三视图图片').setInputFiles(reference);
+  await dialog.getByLabel('选择设定图图片').setInputFiles(reference);
   await dialog.getByLabel('皮肤名称').fill('直传测试大肥鱼');
   await dialog.getByLabel('作者署名').fill('直传作者');
   await dialog.getByLabel('触发关键词').fill('直传风');
-  await dialog.getByRole('checkbox', { name: /我同意将这套三视图公开投稿至 GitHub/u }).check();
+  await dialog.getByRole('checkbox', { name: /我同意将这套设定图公开投稿至 GitHub/u }).check();
 
   // 未点人机验证时先拦住提示
   await dialog.getByRole('button', { name: '直接提交投稿', exact: true }).click();
