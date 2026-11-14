@@ -1,0 +1,5 @@
+{
+  "enabled": {"description": "自动同步网站已审核皮肤", "type": "bool", "default": true},
+  "site_url": {"description": "已审核皮肤图鉴网址", "type": "string", "default": "https://blue-chubby-whale.cyou/", "hint": "需要网站根地址；从 skins/catalog.json 获取目录，只下载同源图片。"},
+  "sync_interval_seconds": {"description": "自动同步间隔（秒）", "type": "int", "default": 300, "hint": "默认每5分钟检查；最短60秒。没有模型费用。"}
+}

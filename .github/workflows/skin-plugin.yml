@@ -1,0 +1,29 @@
+name: 皮肤库插件检查
+on:
+  push:
+    branches: [main]
+    paths: ['plugins/**', 'integrations/**', '.github/workflows/skin-plugin.yml']
+  pull_request:
+    paths: ['plugins/**', 'integrations/**', '.github/workflows/skin-plugin.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: 安装测试依赖
+        shell: bash
+        run: |
+          python -m pip install -r plugins/astrbot_plugin_whale_skins/requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple || python -m pip install -r plugins/astrbot_plugin_whale_skins/requirements.txt -i https://pypi.org/simple
+      - name: 验证皮肤库与动态适配器
+        run: python -m unittest discover -s plugins/astrbot_plugin_whale_skins/tests -v

@@ -71,7 +71,13 @@
    - 通过 GitHub API 全量分页拉取所有带 `已收录` 标签的 Issue（`per_page=100` 逐页获取，过滤 Pull Request，不设上限）；
    - 同时兼容解析网站表单生成的 `whale-skin-submission/v1` JSON 代码块与手工 Markdown 模板段落；
    - 仅从受信任的 HTTPS GitHub 附件域名拉取图片（忽略表情图标），校验 `PNG`/`JPG`/`WebP` 文件头、体积（`<= 10 MB`）、尺寸（`<= 2400 万`像素）及 SHA-256 去重后写入 `dist/skins/issue-<n>/` 与 `dist/skins/catalog.json`，随后部署 GitHub Pages。
-4. **图鉴展示与机器人启用互相独立**：打标收录进图鉴站不会自动修改线上群聊机器人的生图配置或日报轮换列表，机器人侧更新仍需管理员单独配置确认。
+4. **自动同步到机器人**：安装并配置配套的[大肥鱼皮肤库插件](plugins/astrbot_plugin_whale_skins/README.md)及生图适配器后，机器人每 5 分钟读取已发布目录，自动下载校验新皮肤；允许参与日报的投稿加入轮换。普通画图默认原装，上一次成功使用的皮肤下次禁抽。取消收录后，下一次成功同步会停用对应皮肤。本地管理员设置的停用和关键词等覆盖项会保留。没有安装插件的机器人不会自动变化。
+
+### 服务器皮肤管理
+
+在 AstrBot 的「插件管理 → 大肥鱼皮肤库 → 皮肤库」打开管理页，可预览三视图、启用/停用、修改关键词和调整日报轮换权重。群内 `/皮肤库` 查看可用皮肤，管理员可用 `/同步皮肤` 手动检查。
+
+源码位于 [`plugins/astrbot_plugin_whale_skins`](plugins/astrbot_plugin_whale_skins)。配套生图插件 v0.6.5 的升级说明与补丁见 [`integrations`](integrations/README.md)。同步不调用模型、不消耗模型 Token，也不主动向群里发消息。实际生图依旧使用机器人的原有权限、额度和并发规则。
 
 ### 方式二：归档进仓库源码（可选）
 

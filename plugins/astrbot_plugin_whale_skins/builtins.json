@@ -1,0 +1,71 @@
+[
+  {
+    "id": "original",
+    "name": "原装大肥鱼",
+    "reference_name": "whale_reference.png",
+    "reference_sha256": "91eda2cd1150e81742cb883b29f757cfe1e27a48d9d01d61cd205a4ae83cef2b",
+    "appearance": "外观以参考图为准：深靛蓝长发，仅发梢渐浅蓝并自然弯曲，保留刘海、弯呆毛、蓝眼；白蕾丝发箍、带金扣的蓝蝴蝶结、深蓝外缘白色内纹的侧鳍；深蓝金纹长袖女仆裙、鲸鱼刺绣白围裙、蓝色鲸鱼尾巴。保持原图发型、发色、饰品形状、服装纹样与Q版比例，不自行浅蓝化、加密集卷发或更换款式。",
+    "render_style": "",
+    "keywords": [
+      "原装",
+      "原皮",
+      "原版皮肤",
+      "默认皮肤",
+      "女仆装"
+    ],
+    "enabled": true,
+    "daily": true,
+    "weight": 1.0,
+    "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。"
+  },
+  {
+    "id": "winter",
+    "name": "冬装大肥鱼",
+    "reference_name": "whale_winter_reference.jpg",
+    "reference_sha256": "b3c9058c1b7128129e141754a86a998b5a86dbbe68cb7d0196a5992b2624d3b0",
+    "appearance": "冬装外观以参考图为准：深靛蓝长发、发梢浅蓝、蓝眼、Q版比例；蓝鲸造型连帽外套，帽檐袖口衣摆均有白绒边，蓝白格纹围巾、毛球系带、手套、蓝短靴；保留鲸鱼胸针、衣服鲸纹与蓝鲸尾巴。本次固定冬装，不混入原装女仆裙或毛衣皮肤。",
+    "render_style": "",
+    "keywords": [
+      "冬装",
+      "冬日装",
+      "冬季装"
+    ],
+    "enabled": true,
+    "daily": true,
+    "weight": 3.0,
+    "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。"
+  },
+  {
+    "id": "sweater",
+    "name": "毛衣大肥鱼",
+    "reference_name": "whale_sweater_reference.png",
+    "reference_sha256": "de417ff6488e99c8eea09584ee83c1b361f1a28838c6e521d2b23c09ed813f64",
+    "appearance": "毛衣外观以参考图为准：深靛蓝长发、发梢浅蓝、蓝眼、弯呆毛与侧鳍、Q版比例；米白麻花针织帽、胸前蓝鲸图案的米白高领毛衣、深蓝格纹短裙、米白腿套、深蓝鞋；保留鲸鱼斜挎小包、蝴蝶结、蓝鲸尾巴。本次固定毛衣装，不混入女仆裙或冬装绒边外套。",
+    "render_style": "",
+    "keywords": [
+      "毛衣",
+      "针织装"
+    ],
+    "enabled": true,
+    "daily": true,
+    "weight": 3.0,
+    "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。"
+  },
+  {
+    "id": "pixel",
+    "name": "像素风大肥鱼",
+    "reference_name": "whale_pixel_reference.png",
+    "reference_sha256": "de60549edc65fbf0647490c74f4a5db62e1054e3d4bb5a38a64c8c7790239db4",
+    "appearance": "像素风大肥鱼外观以参考图为准：深靛蓝长发与浅蓝发梢、弯呆毛、蓝眼、白蕾丝头箍、金扣蓝蝴蝶结、蓝白侧鳍；深蓝金纹长袖女仆裙、鲸鱼白围裙、蓝鲸尾巴和Q版比例。",
+    "render_style": "沿用参考图的细腻像素插画：方形色块、阶梯轮廓、蓝紫分层光影、星点眼睛高光和粉色腮红，不改成平滑动漫线稿或粗糙游戏小人。",
+    "keywords": [
+      "像素风",
+      "像素画",
+      "像素皮肤"
+    ],
+    "enabled": true,
+    "daily": true,
+    "weight": 3.0,
+    "attribution": "项目历史参考素材；原作者署名与公开使用范围待补充，请勿推定为自由商用素材。"
+  }
+]

@@ -1,0 +1,611 @@
+--- a/main.py
++++ b/main.py
+@@ -25,7 +25,7 @@
+ from .persona import CHARACTER_REFERENCE_NAME, CHARACTER_CONTRACT_VERSION, build_character_prompt, needs_character_reference, parse_natural_request, explicitly_excludes_character
+ from .natural_filter import NaturalImageRequestFilter, bind_plugin, unbind_plugin, current_plain_text, directly_addressed
+ from .notices import NOTICE_STYLE, start_notice, usage_notice, denied_notice, preflight_notice, blocked_notice, read_task_state, failure_notice
+-from .skins import SKINS, select_manual_skin, get_skin, skin_record
++from .skins import SKINS, select_manual_skin, get_skin, skin_record, configure_skin_library, skin_library_status, validate_skin_reference
+
+
+ class UnspacedDrawFilter(filter.CustomFilter):
+@@ -34,7 +34,7 @@
+         return bool(re.match(r"^\s*/(?:画一个|画张|画图|生图|小蓝鲸画图|鲸鱼画图|人设画图|画)\s*\S+", text, re.I))
+
+
+-@register(PLUGIN_NAME, "本地部署", "单次生图、固定人设皮肤与日报配图", "0.6.5")
++@register(PLUGIN_NAME, "本地部署", "单次生图、固定人设皮肤与日报配图", "0.7.0")
+ class KuaiaiImagePlugin(Star):
+     def __init__(self, context: Context, config: AstrBotConfig):
+         super().__init__(context)
+@@ -48,6 +48,7 @@
+                                     int(config.get("generation_timeout", 600)), int(config.get("download_timeout", 120)),
+                                     reference_max_side=int(config.get("reference_max_side", 2048)))
+         self.service.local_reference_roots += ((self.data_dir / "assets").resolve(),)
++        configure_skin_library(self.data_dir / "assets")
+         self.daily = DailyCardController(self)
+         self.news = DailyNewsController(self)
+         self.briefing_repair = BriefingRepairController(self)
+@@ -79,7 +80,7 @@
+
+     async def initialize(self):
+         configured = bool(os.environ.get("KUAI_AI_IMAGE_API_KEY") or (self.data_dir / "api_key").is_file())
+-        logger.info(f"[kuaiai_image] 就绪 version=0.6.5 model={self.service.model} groups={len(self.config.get('allowed_groups', []))} key_configured={configured} retries=0 concurrency=1")
++        logger.info(f"[kuaiai_image] 就绪 version=0.7.0 model={self.service.model} groups={len(self.config.get('allowed_groups', []))} key_configured={configured} retries=0 concurrency=1")
+
+         character_ready = (self.data_dir / "assets" / CHARACTER_REFERENCE_NAME).is_file()
+         logger.info(f"[kuaiai_persona] 就绪 natural={bool(self.config.get('natural_requests_enabled', False))} reference={character_ready} billing_requires_explicit_request=True")
+@@ -143,12 +144,12 @@
+             "named_other_protagonist_not_replaced": not needs_character_reference("皮卡丘开心地庆祝生日")}
+         if allowed:
+             checks["unmentioned_group_draw_not_matched"] = not selector.filter(fixture(sample, at=False), {})
+-        return {"status":"ok", "data":{"version":"0.6.5","character_contract":CHARACTER_CONTRACT_VERSION,"character_reference_required":True,"text_only_character_fallback_enabled":False,"daily_commentary":self.daily.readiness(), "daily_news_guard":{"retention_days":90,"scope":"original_daily_cron_only","success_receipt_required":True,"independent_of_image_switch":True,"expired_runs_blocked":True,"idle_model_calls":0}, "model":self.service.model,
++        return {"status":"ok", "data":{"version":"0.7.0","character_contract":CHARACTER_CONTRACT_VERSION,"character_reference_required":True,"text_only_character_fallback_enabled":False,"daily_commentary":self.daily.readiness(), "daily_news_guard":{"retention_days":90,"scope":"original_daily_cron_only","success_receipt_required":True,"independent_of_image_switch":True,"expired_runs_blocked":True,"idle_model_calls":0}, "model":self.service.model,
+             "natural_requests_enabled":bool(self.config.get("natural_requests_enabled", False)),
+             "character_reference_exists":character.is_file(), "character_reference_name":CHARACTER_REFERENCE_NAME,
+             "character_reference_sha256":hashlib.sha256(character.read_bytes()).hexdigest() if character.is_file() else None,
+-            "manual_default_skin":"original", "manual_skin_keywords":{"冬装":"winter","毛衣":"sweater","像素风":"pixel","像素画":"pixel","像素皮肤":"pixel"},
+-            "skin_catalog":[{**skin_record(s),"reference_exists":(self.data_dir/"assets"/s.reference_name).is_file(),
++            "manual_default_skin":"original", "manual_skin_keywords":({word:skin.id for skin in SKINS.values() for word in SKINS.settings(skin.id).get("keywords", [])} or {"冬装":"winter","毛衣":"sweater","像素风":"pixel","像素画":"pixel","像素皮肤":"pixel"}),
++            "skin_library":skin_library_status(), "skin_catalog":[{**skin_record(s),"enabled":SKINS.settings(s.id).get("enabled", True), "daily":SKINS.settings(s.id).get("daily", True), "keywords":SKINS.settings(s.id).get("keywords", []), "reference_exists":(self.data_dir/"assets"/s.reference_name).is_file(),
+                 "reference_sha256":hashlib.sha256((self.data_dir/"assets"/s.reference_name).read_bytes()).hexdigest()
+                 if (self.data_dir/"assets"/s.reference_name).is_file() else None} for s in SKINS.values()],
+             "daily_uses_same_reference":self.daily.reference == character,
+@@ -265,7 +266,7 @@
+             skin = None
+             if persona_mode:
+                 skin = select_manual_skin(user_text)
+-                character = self.data_dir / "assets" / skin.reference_name
++                character = validate_skin_reference(skin, self.data_dir / "assets")
+                 if not character.is_file():
+                     raise ImageError("小蓝鲸固定人设图暂不可用，请联系管理员；没有提交请求。")
+                 if not self.config.get("edit_enabled", True):
+@@ -339,7 +340,7 @@
+                 if reference is not None:
+                     raise ImageError("这条请求同时有固定人设和另一张参考图。当前只验证单参考图：请不附图使用 /小蓝鲸画图 场景，或用 /改图 只修改你发的图；没有提交请求。")
+                 skin = select_manual_skin(text or prompt)
+-                character = self.data_dir / "assets" / skin.reference_name
++                character = validate_skin_reference(skin, self.data_dir / "assets")
+                 if not character.is_file():
+                     raise ImageError("小蓝鲸固定人设图暂不可用，请联系管理员；没有提交请求。")
+                 prompt = build_character_prompt(prompt, skin_id=skin.id)
+--- a/skins.py
++++ b/skins.py
+@@ -1,15 +1,17 @@
+ """固定人设皮肤及关键词选择；不请求模型，不修改用户提供的参考图。"""
++
+ from __future__ import annotations
+
+-import random
+-import re
+ import datetime
+ import json
+ import math
++import random
++import re
+ from dataclasses import dataclass
+ from pathlib import Path
+
+ from .core import ImageError
++from .library_registry import LibraryCatalog
+
+
+ @dataclass(frozen=True)
+@@ -18,70 +20,136 @@
+     label: str
+     reference_name: str
+     appearance: str
+-    render_style: str = ''
+-
+-
+-ORIGINAL = CharacterSkin('original', '原装', 'whale_reference.png', (
+-    "外观以参考图为准：深靛蓝长发，仅发梢渐浅蓝并自然弯曲，保留刘海、弯呆毛、蓝眼；"
+-    "白蕾丝发箍、带金扣的蓝蝴蝶结、深蓝外缘白色内纹的侧鳍；"
+-    "深蓝金纹长袖女仆裙、鲸鱼刺绣白围裙、蓝色鲸鱼尾巴。"
+-    "保持原图发型、发色、饰品形状、服装纹样与Q版比例，不自行浅蓝化、加密集卷发或更换款式。"
+-))
+-WINTER = CharacterSkin('winter', '冬装', 'whale_winter_reference.jpg', (
+-    "冬装外观以参考图为准：深靛蓝长发、发梢浅蓝、蓝眼、Q版比例；"
+-    "蓝鲸造型连帽外套，帽檐袖口衣摆均有白绒边，蓝白格纹围巾、毛球系带、手套、蓝短靴；"
+-    "保留鲸鱼胸针、衣服鲸纹与蓝鲸尾巴。本次固定冬装，不混入原装女仆裙或毛衣皮肤。"
+-))
+-SWEATER = CharacterSkin('sweater', '毛衣', 'whale_sweater_reference.png', (
+-    "毛衣外观以参考图为准：深靛蓝长发、发梢浅蓝、蓝眼、弯呆毛与侧鳍、Q版比例；"
+-    "米白麻花针织帽、胸前蓝鲸图案的米白高领毛衣、深蓝格纹短裙、米白腿套、深蓝鞋；"
+-    "保留鲸鱼斜挎小包、蝴蝶结、蓝鲸尾巴。本次固定毛衣装，不混入女仆裙或冬装绒边外套。"
+-))
+-PIXEL = CharacterSkin('pixel', '像素风大肥鱼', 'whale_pixel_reference.png', (
+-    "像素风大肥鱼外观以参考图为准：深靛蓝长发与浅蓝发梢、弯呆毛、蓝眼、白蕾丝头箍、金扣蓝蝴蝶结、蓝白侧鳍；"
+-    "深蓝金纹长袖女仆裙、鲸鱼白围裙、蓝鲸尾巴和Q版比例。"
+-), (
+-    "沿用参考图的细腻像素插画：方形色块、阶梯轮廓、蓝紫分层光影、星点眼睛高光和粉色腮红，"
+-    "不改成平滑动漫线稿或粗糙游戏小人。"
+-))
+-SKINS = {skin.id: skin for skin in (ORIGINAL, WINTER, SWEATER, PIXEL)}
++    render_style: str = ""
++
++
++ORIGINAL = CharacterSkin(
++    "original",
++    "原装",
++    "whale_reference.png",
++    (
++        "外观以参考图为准：深靛蓝长发，仅发梢渐浅蓝并自然弯曲，保留刘海、弯呆毛、蓝眼；"
++        "白蕾丝发箍、带金扣的蓝蝴蝶结、深蓝外缘白色内纹的侧鳍；"
++        "深蓝金纹长袖女仆裙、鲸鱼刺绣白围裙、蓝色鲸鱼尾巴。"
++        "保持原图发型、发色、饰品形状、服装纹样与Q版比例，不自行浅蓝化、加密集卷发或更换款式。"
++    ),
++)
++WINTER = CharacterSkin(
++    "winter",
++    "冬装",
++    "whale_winter_reference.jpg",
++    (
++        "冬装外观以参考图为准：深靛蓝长发、发梢浅蓝、蓝眼、Q版比例；"
++        "蓝鲸造型连帽外套，帽檐袖口衣摆均有白绒边，蓝白格纹围巾、毛球系带、手套、蓝短靴；"
++        "保留鲸鱼胸针、衣服鲸纹与蓝鲸尾巴。本次固定冬装，不混入原装女仆裙或毛衣皮肤。"
++    ),
++)
++SWEATER = CharacterSkin(
++    "sweater",
++    "毛衣",
++    "whale_sweater_reference.png",
++    (
++        "毛衣外观以参考图为准：深靛蓝长发、发梢浅蓝、蓝眼、弯呆毛与侧鳍、Q版比例；"
++        "米白麻花针织帽、胸前蓝鲸图案的米白高领毛衣、深蓝格纹短裙、米白腿套、深蓝鞋；"
++        "保留鲸鱼斜挎小包、蝴蝶结、蓝鲸尾巴。本次固定毛衣装，不混入女仆裙或冬装绒边外套。"
++    ),
++)
++PIXEL = CharacterSkin(
++    "pixel",
++    "像素风大肥鱼",
++    "whale_pixel_reference.png",
++    (
++        "像素风大肥鱼外观以参考图为准：深靛蓝长发与浅蓝发梢、弯呆毛、蓝眼、白蕾丝头箍、金扣蓝蝴蝶结、蓝白侧鳍；"
++        "深蓝金纹长袖女仆裙、鲸鱼白围裙、蓝鲸尾巴和Q版比例。"
++    ),
++    (
++        "沿用参考图的细腻像素插画：方形色块、阶梯轮廓、蓝紫分层光影、星点眼睛高光和粉色腮红，"
++        "不改成平滑动漫线稿或粗糙游戏小人。"
++    ),
++)
++SKINS = LibraryCatalog(
++    {skin.id: skin for skin in (ORIGINAL, WINTER, SWEATER, PIXEL)}, CharacterSkin
++)
++
++
++def configure_skin_library(assets):
++    SKINS.configure(assets)
++
++
++def skin_library_status():
++    return SKINS.status()
++
++
++def is_skin_enabled(skin_id):
++    return SKINS.settings(skin_id).get("enabled", True)
++
++
++def validate_skin_reference(skin, assets):
++    if not is_skin_enabled(skin.id):
++        raise ImageError("这套皮肤已停用或撤销收录，没有提交生图请求。")
++    try:
++        return SKINS.verify(skin, assets)
++    except ValueError as exc:
++        raise ImageError("皮肤参考图暂不可用（缺失或校验失败），没有提交生图请求。") from exc
++
++
+ KEYWORDS = {
+-    'original': re.compile(r'原装(?:皮肤)?|原皮|原版皮肤|默认皮肤|女仆装'),
+-    'winter': re.compile(r'冬装|冬日装|冬季装'),
+-    'sweater': re.compile(r'毛衣|针织装'),
+-    'pixel': re.compile(r'像素风|像素画|像素皮肤'),
++    "original": re.compile(r"原装(?:皮肤)?|原皮|原版皮肤|默认皮肤|女仆装"),
++    "winter": re.compile(r"冬装|冬日装|冬季装"),
++    "sweater": re.compile(r"毛衣|针织装"),
++    "pixel": re.compile(r"像素风|像素画|像素皮肤"),
+ }
+-NEGATED = re.compile(r'(?:不要|不用|不穿|不选|别用|别穿|不需要|排除|不是|不画|去掉)(?:穿|用|选)?[的\s]*$')
+-
+-
+-def get_skin(skin_id='original') -> CharacterSkin:
++NEGATED = re.compile(
++    r"(?:不要|不用|不穿|不选|别用|别穿|不需要|排除|不是|不画|去掉)(?:穿|用|选)?[的\s]*$"
++)
++
++
++def get_skin(skin_id="original") -> CharacterSkin:
+     if not isinstance(skin_id, str) or skin_id not in SKINS:
+-        raise ImageError('皮肤记录无效，请联系管理员；没有提交生图请求。')
++        raise ImageError("皮肤记录无效，请联系管理员；没有提交生图请求。")
+     return SKINS[skin_id]
+
+
+ def select_manual_skin(user_text: str) -> CharacterSkin:
+     selected, excluded = set(), set()
+-    for key, pattern in KEYWORDS.items():
+-        for match in pattern.finditer(user_text or ''):
+-            if NEGATED.search((user_text or '')[max(0, match.start()-10):match.start()]):
+-                excluded.add(key)
+-            else:
+-                selected.add(key)
++    source = user_text or ""
++    candidates = []
++    for skin_id in SKINS:
++        words = SKINS.settings(skin_id).get("keywords")
++        pattern = (
++            re.compile("|".join(re.escape(w) for w in sorted(words, key=len, reverse=True)), re.I)
++            if words
++            else KEYWORDS.get(skin_id)
++        )
++        if pattern is not None:
++            for match in pattern.finditer(source):
++                candidates.append((match.start(), match.end(), skin_id))
++    occupied = []
++    for start, end, skin_id in sorted(candidates, key=lambda x: (-(x[1] - x[0]), x[0])):
++        if any(start < b and end > a for a, b in occupied):
++            continue
++        occupied.append((start, end))
++        if NEGATED.search(source[max(0, start - 10) : start]):
++            excluded.add(skin_id)
++        else:
++            selected.add(skin_id)
+     selected -= excluded
+     if len(selected) > 1:
+-        raise ImageError('这次同时指定了多套皮肤，请只选原装、冬装、毛衣或像素风中的一套；没有提交请求。')
++        raise ImageError("这次指定了多套皮肤，请只选一套；没有提交请求。")
+     if selected:
+-        return get_skin(next(iter(selected)))
+-    if 'original' in excluded:
+-        raise ImageError('请明确使用冬装、毛衣或像素风皮肤；没有提交请求。')
+-    return ORIGINAL
+-
+-
+-BASE_WEIGHTS = {'original': 1.0, 'winter': 3.0, 'sweater': 3.0, 'pixel': 3.0}
++        skin_id = next(iter(selected))
++        if not is_skin_enabled(skin_id):
++            raise ImageError("这套皮肤已停用或撤销收录，请选择其他皮肤；没有提交请求。")
++        return get_skin(skin_id)
++    if "original" in excluded:
++        raise ImageError("请明确选择其他皮肤；没有提交请求。")
++    return get_skin("original")
++
++
++BASE_WEIGHTS = {"original": 1.0, "winter": 3.0, "sweater": 3.0, "pixel": 3.0}
+ RECENCY_FACTORS = (0.0, 0.5, 0.8)
+-ROTATION_METHOD = 'weighted_recency_no_repeat_v2'
+-HISTORY_NAME = re.compile(r'^(\d{4}-\d{2}-\d{2})(?:\.json|\.failed-\d+\.json)$')
++ROTATION_METHOD = "weighted_recency_no_repeat_v2"
++HISTORY_NAME = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:\.json|\.failed-\d+\.json)$")
+
+
+ def read_recent_skin_history(history_dir: Path | None = None) -> list[str]:
+@@ -90,39 +158,49 @@
+         return []
+     root = Path(history_dir)
+     if root.is_symlink():
+-        raise ImageError('皮肤使用历史路径异常，没有提交生图请求。')
++        raise ImageError("皮肤使用历史路径异常，没有提交生图请求。")
+     if not root.exists():
+         return []
+     events = {}
+     try:
+         if not root.is_dir():
+-            raise ValueError('history directory')
+-        for path in sorted(root.glob('*.json'), reverse=True)[:512]:
++            raise ValueError("history directory")
++        for path in sorted(root.glob("*.json"), reverse=True)[:512]:
+             match = HISTORY_NAME.fullmatch(path.name)
+             if not match:
+                 continue
+             day = datetime.date.fromisoformat(match[1])
+             if path.is_symlink() or path.stat().st_size > 65536:
+-                raise ValueError('history file')
+-            record = json.loads(path.read_text(encoding='utf-8'))
++                raise ValueError("history file")
++            record = json.loads(path.read_text(encoding="utf-8"))
+             if not isinstance(record, dict):
+-                raise ValueError('history schema')
+-            if record.get('image_generation_succeeded') is not True and record.get('status') != 'sent':
++                raise ValueError("history schema")
++            if (
++                record.get("image_generation_succeeded") is not True
++                and record.get("status") != "sent"
++            ):
+                 continue
+-            skin = get_skin(record.get('skin_id', 'original'))
+-            identity = record.get('image_job_id') or 'legacy:' + day.isoformat()
++            skin = get_skin(record.get("skin_id", "original"))
++            identity = record.get("image_job_id") or "legacy:" + day.isoformat()
+             if not isinstance(identity, str) or len(identity) > 128:
+-                raise ValueError('history identity')
+-            stamp = record.get('image_generated_at', record.get('updated_at', record.get('created_at')))
++                raise ValueError("history identity")
++            stamp = record.get(
++                "image_generated_at", record.get("updated_at", record.get("created_at"))
++            )
+             if stamp is None:
+-                stamp = datetime.datetime.combine(day, datetime.time(), tzinfo=datetime.timezone.utc).timestamp()
++                stamp = datetime.datetime.combine(
++                    day, datetime.time(), tzinfo=datetime.timezone.utc
++                ).timestamp()
+             if type(stamp) not in (int, float) or not math.isfinite(stamp):
+-                raise ValueError('history timestamp')
++                raise ValueError("history timestamp")
+             if identity in events and events[identity][1] != skin.id:
+-                raise ValueError('history conflict')
+-            events[identity] = (max(float(stamp), events.get(identity, (float('-inf'), ''))[0]), skin.id)
++                raise ValueError("history conflict")
++            events[identity] = (
++                max(float(stamp), events.get(identity, (float("-inf"), ""))[0]),
++                skin.id,
++            )
+     except (OSError, ValueError, TypeError) as error:
+-        raise ImageError('皮肤使用历史无法可靠读取，未退回等概率，也没有提交生图请求。') from error
++        raise ImageError("皮肤使用历史无法可靠读取，未退回等概率，也没有提交生图请求。") from error
+     return [skin_id for _, skin_id in sorted(events.values(), reverse=True)[:8]]
+
+
+@@ -134,32 +212,54 @@
+     for skin in available:
+         age = next((i for i, value in enumerate(recent) if value == skin.id), None)
+         factor = RECENCY_FACTORS[age] if age is not None and age < len(RECENCY_FACTORS) else 1.0
+-        weights.append(BASE_WEIGHTS[skin.id] * factor)
++        weights.append(
++            SKINS.settings(skin.id).get("weight", BASE_WEIGHTS.get(skin.id, 3.0)) * factor
++        )
+     return weights
+
+
+ def daily_skin_distribution(assets_dir: Path, history_dir: Path | None = None) -> dict:
+-    available = [skin for skin in SKINS.values() if (Path(assets_dir)/skin.reference_name).is_file()]
++    available = [
++        skin
++        for skin in SKINS.values()
++        if is_skin_enabled(skin.id)
++        and SKINS.settings(skin.id).get("daily", True)
++        and (Path(assets_dir) / skin.reference_name).is_file()
++    ]
+     if not available:
+-        raise ImageError('没有可用的人设参考图，日报配图未提交。')
++        raise ImageError("没有可用的人设参考图，日报配图未提交。")
+     recent = read_recent_skin_history(history_dir)
+     weights = rotation_weights(available, recent)
+     total = sum(weights)
+     if total <= 0:
+-        raise ImageError('可用参考图只剩上次成功使用的皮肤，为避免连续重复，本次未提交日报生图；请恢复其他皮肤参考图。')
+-    return {'method': ROTATION_METHOD, 'base_weights': dict(BASE_WEIGHTS),
+-            'weights': dict(zip((skin.id for skin in available), weights)),
+-            'probabilities': {skin.id: weight / total for skin, weight in zip(available, weights)},
+-            'recent_successful_skins': recent, 'success_only': True,
+-            'recency_factors': list(RECENCY_FACTORS), 'forced_rotation': False,
+-            'no_consecutive_repeat': True, 'blocked_skin_id': recent[0] if recent else None}
++        raise ImageError(
++            "可用参考图只剩上次成功使用的皮肤，为避免连续重复，本次未提交日报生图；请恢复其他皮肤参考图。"
++        )
++    return {
++        "method": ROTATION_METHOD,
++        "base_weights": {
++            s.id: SKINS.settings(s.id).get("weight", BASE_WEIGHTS.get(s.id, 3.0)) for s in available
++        },
++        "weights": dict(zip((skin.id for skin in available), weights)),
++        "probabilities": {skin.id: weight / total for skin, weight in zip(available, weights)},
++        "recent_successful_skins": recent,
++        "success_only": True,
++        "recency_factors": list(RECENCY_FACTORS),
++        "forced_rotation": False,
++        "no_consecutive_repeat": True,
++        "blocked_skin_id": recent[0] if recent else None,
++    }
+
+
+ def choose_daily_skin(assets_dir: Path, history_dir: Path | None = None) -> CharacterSkin:
+     state = daily_skin_distribution(assets_dir, history_dir)
+-    available = [SKINS[skin_id] for skin_id in state['weights']]
+-    return random.choices(available, weights=list(state['weights'].values()), k=1)[0]
++    available = [SKINS[skin_id] for skin_id in state["weights"]]
++    return random.choices(available, weights=list(state["weights"].values()), k=1)[0]
+
+
+ def skin_record(skin: CharacterSkin) -> dict:
+-    return {'skin_id': skin.id, 'skin_label': skin.label, 'skin_reference_name': skin.reference_name}
++    return {
++        "skin_id": skin.id,
++        "skin_label": skin.label,
++        "skin_reference_name": skin.reference_name,
++    }
+--- a/daily_card.py
++++ b/daily_card.py
+@@ -14,7 +14,7 @@
+
+ from .core import ImageError, ReferenceSource, atomic_json, cleanup_jobs
+ from .persona import CHARACTER_REFERENCE_NAME, CHARACTER_CONTRACT_VERSION
+-from .skins import SKINS, get_skin, choose_daily_skin, skin_record, daily_skin_distribution, ROTATION_METHOD
++from .skins import SKINS, get_skin, choose_daily_skin, skin_record, daily_skin_distribution, ROTATION_METHOD, validate_skin_reference
+
+ TZ = datetime.timezone(datetime.timedelta(hours=8))
+ from .daily_quality import (
+@@ -281,7 +281,7 @@
+                 await asyncio.sleep(3)
+             record = json.loads((self.ledger.root / (day + '.json')).read_text(encoding='utf-8'))
+             skin = get_skin(record.get('skin_id', 'original'))
+-            reference = self.reference.parent / skin.reference_name
++            reference = validate_skin_reference(skin, self.reference.parent)
+             if not reference.is_file():
+                 raise ImageError("固定人设参考图不可用，没有提交请求。")
+             if not self.config.get("edit_enabled", True):
+--- a/metadata.yaml
++++ b/metadata.yaml
+@@ -1,6 +1,6 @@
+ name: astrbot_plugin_kuaiai_image
+ display_name: 快AI 生图与人设皮肤
+ desc: 明确画图指令、定向自然请求、原装、冬装、毛衣、像素风参考图与日报随机皮肤，支持 URL 与 Base64，单并发、冷却、去重、零自动重试。
+-version: v0.6.5
++version: v0.7.0
+ author: 本地部署
+ astrbot_version: ">=4.29.1"
+--- /dev/null
++++ b/library_registry.py
+@@ -0,0 +1,162 @@
++"""皮肤库原子目录读取器；不依赖管理插件的加载顺序，不请求网络。"""
++
++from __future__ import annotations
++
++import hashlib
++import json
++import math
++import re
++from collections.abc import Mapping
++from pathlib import Path, PurePosixPath
++
++
++class LibraryCatalog(Mapping):
++    def __init__(self, builtins, constructor):
++        self.builtins = dict(builtins)
++        self.constructor = constructor
++        self.root = None
++        self.signature = None
++        self.records = {}
++        self.current = dict(builtins)
++        self.error = None
++
++    def configure(self, assets):
++        self.root = Path(assets)
++        self.signature = None
++        self.records = {}
++        self.current = dict(self.builtins)
++        self.refresh()
++
++    def refresh(self):
++        if self.root is None:
++            return
++        path = self.root / "whale_skin_library.json"
++        try:
++            if not path.exists():
++                if self.records:
++                    raise ValueError("library_missing")
++                return
++            stat = path.stat()
++            signature = (stat.st_mtime_ns, stat.st_size, stat.st_ino)
++            if signature == self.signature:
++                return
++            if path.is_symlink() or path.parent.is_symlink() or stat.st_size > 4 * 1024 * 1024:
++                raise ValueError("library_path")
++            raw = json.loads(path.read_text(encoding="utf-8"))
++            if raw.get("schema") != "whale-skin-library/v1" or not isinstance(
++                raw.get("skins"), list
++            ):
++                raise ValueError("library_schema")
++            current, records = {}, {}
++            for row in raw["skins"]:
++                skin_id = row["id"]
++                if (
++                    not isinstance(skin_id, str)
++                    or not re.fullmatch(r"[a-z][a-z0-9-]{1,47}", skin_id)
++                    or skin_id in records
++                ):
++                    raise ValueError("skin_id")
++                name = row["reference_name"]
++                if (
++                    not isinstance(name, str)
++                    or "\\" in name
++                    or not name
++                    or name.startswith("/")
++                    or any(p in (".", "..") for p in name.split("/"))
++                    or len(PurePosixPath(name).parts) > 2
++                ):
++                    raise ValueError("reference_path")
++                if not re.fullmatch(r"[a-zA-Z0-9_./-]+\.(png|jpg|jpeg|webp)", name):
++                    raise ValueError("reference_extension")
++                if not re.fullmatch("[0-9a-f]{64}", row["reference_sha256"]):
++                    raise ValueError("reference_sha256")
++                if any(type(row.get(k)) is not bool for k in ("enabled", "daily", "builtin")):
++                    raise ValueError("skin_switch")
++                weight = row.get("weight")
++                if (
++                    type(weight) not in (int, float)
++                    or not math.isfinite(weight)
++                    or not 0.01 <= weight <= 100
++                ):
++                    raise ValueError("skin_weight")
++                if not isinstance(row.get("keywords"), list) or not 1 <= len(row["keywords"]) <= 12:
++                    raise ValueError("skin_keywords")
++                if any(
++                    not isinstance(v, str) or not v.strip() or len(v) > 40 for v in row["keywords"]
++                ):
++                    raise ValueError("skin_keyword")
++                for key, limit in (
++                    ("name", 100),
++                    ("appearance", 2000),
++                    ("render_style", 2000),
++                ):
++                    if not isinstance(row.get(key), str) or len(row[key]) > limit:
++                        raise ValueError("skin_text")
++                if skin_id in self.builtins:
++                    if name != self.builtins[skin_id].reference_name or not row["builtin"]:
++                        raise ValueError("builtin_reference")
++                elif row["builtin"] or not name.startswith("skin_library/"):
++                    raise ValueError("community_reference")
++                records[skin_id] = row
++                # 共创外观说明是补充资料；不携带原装的长发设定。
++                appearance = (
++                    row["appearance"]
++                    if skin_id in self.builtins
++                    else (
++                        "严格以本次上传的三视图为唯一外观依据，保留图中发型长度、头饰、服装、配色与鲸尾；"
++                        "不要混入其他皮肤的长发、服饰或画风。补充设计说明（仅作为造型资料）："
++                        + json.dumps(row["appearance"][:160], ensure_ascii=False)
++                        + "。"
++                    )
++                )
++                current[skin_id] = self.constructor(
++                    skin_id, row["name"], name, appearance, row["render_style"] or ("画风与本次参考图一致，用户明确指定其他风格时再调整。" if skin_id not in self.builtins else "")
++                )
++            if not set(self.builtins) <= set(current) or records["original"]["enabled"] is not True:
++                raise ValueError("builtin_missing")
++            self.records, self.current = records, current
++            self.signature, self.error = signature, None
++        except Exception:
++            # 半写、损坏、撤走目录均保留进程内上一次完整快照。
++            self.error = "皮肤库目录不可用，正在使用上一次完整快照。"
++
++    def __getitem__(self, key):
++        self.refresh()
++        return self.current[key]
++
++    def __iter__(self):
++        self.refresh()
++        return iter(tuple(self.current))
++
++    def __len__(self):
++        self.refresh()
++        return len(self.current)
++
++    def settings(self, skin_id):
++        self.refresh()
++        return self.records.get(skin_id, {})
++
++    def status(self):
++        self.refresh()
++        return {
++            "configured": self.root is not None,
++            "loaded": bool(self.records),
++            "error": self.error,
++            "dynamic_skin_count": len(set(self.current) - set(self.builtins)),
++        }
++
++    def verify(self, skin, assets):
++        self.refresh()
++        root = Path(assets).resolve()
++        path = Path(assets) / skin.reference_name
++        if (
++            path.is_symlink()
++            or path.parent.is_symlink()
++            or not path.resolve().is_relative_to(root)
++            or not path.is_file()
++        ):
++            raise ValueError("reference_missing")
++        expected = self.records.get(skin.id, {}).get("reference_sha256")
++        if expected and hashlib.sha256(path.read_bytes()).hexdigest() != expected:
++            raise ValueError("reference_changed")
++        return path
