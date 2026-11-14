@@ -1,14 +1,19 @@
 export const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
-export const DEFAULT_SKIN_DESCRIPTION = '大肥鱼卖萌';
-
 export const LEGACY_EMPTY_DESCRIPTIONS = new Set([
   '未单独填写设计说明，详见三视图原图。',
   '社区共创投稿的三视图皮肤，详见展示细节。',
+  '大肥鱼卖萌',
+  '大肥鱼摇摇小鲸尾，眨着蓝眼睛求夸夸～',
 ]);
 
 export function cleanText(value, max = 500) {
   return String(value ?? '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/gu, '').trim().slice(0, max);
+}
+
+export function displayDescription(value) {
+  const text = cleanText(value, 1600);
+  return !text || LEGACY_EMPTY_DESCRIPTIONS.has(text) ? '' : text;
 }
 
 export function keywordsFrom(value) {
@@ -151,7 +156,7 @@ export function submissionData(form, image) {
     name: cleanText(form.name, 40),
     author: cleanText(form.author, 40),
     keywords: keywordsFrom(form.keywords),
-    description: composedDescription || DEFAULT_SKIN_DESCRIPTION,
+    description: composedDescription,
     attribution: composedAttribution || '未单独填写素材来源与使用范围，可在 Issue 中补充说明。',
     designTopics: {
       styles: styleLabels,

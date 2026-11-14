@@ -6,6 +6,7 @@ import {
   SOURCE_TYPE_OPTIONS,
   USAGE_SCOPE_OPTIONS,
   cleanText,
+  displayDescription,
   filterSkins,
   issueUrl,
   readLocalImage,
@@ -57,14 +58,16 @@ function Modal({ children, title, onClose, className = '' }) {
 function Detail({ skin, onClose, onCopy }) {
   const image = assetUrl(skin.reference.path);
   const [copied, setCopied] = useState(false);
+  const description = displayDescription(skin.description);
+  const appearance = displayDescription(skin.appearance);
   return <Modal title={`${skin.name}三视图`} onClose={onClose} className="detail-dialog">
-    <div className="detail-heading"><h2>{skin.name}</h2><p>{skin.description}</p></div>
+    <div className="detail-heading"><h2>{skin.name}</h2>{description && <p>{description}</p>}</div>
     <div className="detail-image"><img src={image} alt={`${skin.name}完整正面、侧面、背面三视图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} /></div>
     <ViewLabels />
     <div className="detail-body">
       <div>
-        <h3>看清这一套的细节</h3>
-        <p>{skin.appearance}</p>
+        <h3>{appearance ? '看清这一套的细节' : '触发关键词'}</h3>
+        {appearance && <p>{appearance}</p>}
         <div className="keywords">{skin.keywords.map(word => <span key={word}>{word}</span>)}</div>
       </div>
       <div className="detail-credit">
@@ -708,18 +711,21 @@ export default function App() {
           </div>
         </div>
         <div className="skin-grid">
-          {visible.map(skin => (
-            <article className="skin-card" key={skin.id}>
-              <button className="card-art art-button" onClick={() => open('detail', skin)} aria-label={`查看${skin.name}三视图`}>
-                <img src={assetUrl(skin.reference.path)} alt={`${skin.name}三视图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} loading="lazy" />
-              </button>
-              <div className="card-caption">
-                <h3>{skin.name}</h3>
-                <p>{skin.description}</p>
-                <button className="card-link" onClick={() => open('detail', skin)}>查看三视图 <Icon name="arrow" size={18} /></button>
-              </div>
-            </article>
-          ))}
+          {visible.map(skin => {
+            const description = displayDescription(skin.description);
+            return (
+              <article className="skin-card" key={skin.id}>
+                <button className="card-art art-button" onClick={() => open('detail', skin)} aria-label={`查看${skin.name}三视图`}>
+                  <img src={assetUrl(skin.reference.path)} alt={`${skin.name}三视图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} loading="lazy" />
+                </button>
+                <div className="card-caption">
+                  <h3>{skin.name}</h3>
+                  {description && <p>{description}</p>}
+                  <button className="card-link" onClick={() => open('detail', skin)}>查看三视图 <Icon name="arrow" size={18} /></button>
+                </div>
+              </article>
+            );
+          })}
         </div>
         {!visible.length && (
           <div className="empty-state" role="status">

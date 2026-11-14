@@ -1,6 +1,6 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, copyFileSync } from 'node:fs';
 import path from 'node:path';
-import { imageDimensions, sniffImage } from '../src/domain.js';
+import { displayDescription, imageDimensions, sniffImage } from '../src/domain.js';
 import { sha256, validateCatalog, validateSkin } from './catalog.mjs';
 
 const args = new Map();
@@ -18,7 +18,8 @@ validateCatalog(catalog,publicRoot);
 if (catalog.skins.some(skin=>skin.id===id) || existsSync(path.join(publicRoot,'skins',id))) throw new Error('此 ID 已存在，禁止覆盖现有皮肤。');
 const data=JSON.parse(readFileSync(path.resolve(meta),'utf8'));
 if (data.schema !== 'whale-skin-submission/v1' || data.rightsConfirmed !== true || data.publicSubmissionConfirmed !== true) throw new Error('需完整投稿资料、公开确认和权利说明。');
-if (!data.author || !data.description || !data.attribution || !Array.isArray(data.keywords) || !data.keywords.length) throw new Error('投稿资料不完整。');
+if (!data.author || !data.attribution || !Array.isArray(data.keywords) || !data.keywords.length) throw new Error('投稿资料不完整。');
+const desc = displayDescription(data.description);
 const bytes=readFileSync(path.resolve(input));
 const type=sniffImage(bytes);const extension={'image/png':'png','image/jpeg':'jpg','image/webp':'webp'}[type];
 if (!extension || bytes.length>10*1024*1024) throw new Error('图片格式无效或超过 10 MB。');
@@ -26,7 +27,7 @@ const hash=sha256(bytes);
 if (data.reference?.sha256 !== hash) throw new Error('原图与投稿时的 SHA-256 不一致，请核实而不是跳过检查。');
 const dimensions=imageDimensions(bytes);
 const item={id,name:data.name,category:'community',categoryLabel:'共创',status:'approved',keywords:data.keywords,
-  description:data.description,appearance:data.description,
+  description:desc,appearance:desc,
   attribution:`${data.author}；${data.attribution}`,legacy:false,
   rights:{license:'LicenseRef-Asset-Rights-Reserved',note:data.attribution},
   requestedDailyRotation:Boolean(data.requestedDailyRotation),

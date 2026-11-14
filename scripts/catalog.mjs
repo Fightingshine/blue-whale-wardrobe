@@ -8,8 +8,11 @@ export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 export function validateSkin(skin, publicRoot, { checkFile = true } = {}) {
   const fail = message => { throw new Error(`${skin?.id || 'unknown'}: ${message}`); };
   if (!skin || !/^[a-z][a-z0-9-]{1,47}$/u.test(skin.id)) fail('皮肤 ID 必须是安全的小写英文标识。');
-  for (const key of ['name','description','appearance','category','categoryLabel','attribution']) {
+  for (const key of ['name','category','categoryLabel','attribution']) {
     if (typeof skin[key] !== 'string' || !skin[key].trim() || skin[key].length > 1600) fail(`字段 ${key} 缺失或过长。`);
+  }
+  for (const key of ['description','appearance']) {
+    if (typeof skin[key] !== 'string' || skin[key].length > 1600) fail(`字段 ${key} 格式或长度不合法。`);
   }
   if (!Array.isArray(skin.keywords) || !skin.keywords.length || skin.keywords.some(x => typeof x !== 'string' || !x.trim() || x.length > 32)) fail('关键词不合法。');
   if (skin.status !== 'approved') fail('公开图鉴只能包含已收录项目。');
