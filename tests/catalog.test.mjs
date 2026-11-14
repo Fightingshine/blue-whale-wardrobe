@@ -15,6 +15,14 @@ test('全部归档原图哈希和尺寸通过且四套历史皮肤保留',()=>{
   assert.equal(validateCatalog(catalog,publicRoot),catalog.skins.length);
   assert.deepEqual(catalog.skins.filter(skin=>skin.legacy).map(skin=>skin.id).sort(),['original','pixel','sweater','winter']);
 });
+test('双马尾与眼镜皮肤保留机器人生图appearance约束且与网页简介分离',()=>{
+  for(const id of ['twin-tails','glasses']){
+    const skin=catalog.skins.find(item=>item.id===id);
+    assert.ok(skin);
+    assert.ok(skin.appearance&&skin.appearance.length>20);
+    assert.ok(skin.description&&skin.description!==skin.appearance);
+  }
+});
 test('拒绝重复皮肤ID',()=>{assert.throws(()=>validateCatalog({...catalog,skins:[...catalog.skins,catalog.skins[0]]},publicRoot));});
 test('拒绝远程参考图',()=>{const skin=structuredClone(catalog.skins[0]);skin.reference.path='https://example.com/reference.png';assert.throws(()=>validateSkin(skin,publicRoot));});
 test('拒绝参考图路径穿越',()=>{const skin=structuredClone(catalog.skins[0]);skin.reference.path='../private.json';assert.throws(()=>validateSkin(skin,publicRoot));});

@@ -59,21 +59,20 @@ function Detail({ skin, onClose, onCopy }) {
   const image = assetUrl(skin.reference.path);
   const [copied, setCopied] = useState(false);
   const description = displayDescription(skin.description);
-  const appearance = displayDescription(skin.appearance);
+  const rightsNote = skin.rights?.note && !skin.attribution.includes(skin.rights.note) ? skin.rights.note : '';
   return <Modal title={`${skin.name}设定图`} onClose={onClose} className="detail-dialog">
     <div className="detail-heading"><h2>{skin.name}</h2>{description && <p>{description}</p>}</div>
     <div className="detail-image"><img src={image} alt={`${skin.name}设定图`} className={skin.id === 'pixel' ? 'pixel-art' : ''} /></div>
     {skin.legacy && <ViewLabels />}
     <div className="detail-body">
       <div>
-        <h3>{appearance ? '看清这一套的细节' : '触发关键词'}</h3>
-        {appearance && <p>{appearance}</p>}
+        <h3>触发关键词</h3>
         <div className="keywords">{skin.keywords.map(word => <span key={word}>{word}</span>)}</div>
       </div>
       <div className="detail-credit">
         <h3>署名与使用说明</h3>
         <p>{skin.attribution}</p>
-        <p>{skin.rights.note}</p>
+        {rightsNote && <p>{rightsNote}</p>}
         <small>原图 {skin.reference.width} × {skin.reference.height} · 保留原图尺寸</small>
         {typeof skin.issueUrl === 'string' && skin.issueUrl.startsWith('https://github.com/') && (
           <a className="issue-source-link" href={skin.issueUrl} target="_blank" rel="noreferrer">查看原投稿 Issue <Icon name="external" size={13} /></a>

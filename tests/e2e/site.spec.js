@@ -98,6 +98,38 @@ test('完整设定图与下载入口及关闭弹窗', async ({ page }) => {
   await expect(dialog).not.toBeVisible();
 });
 
+test('详情页隐藏生图提示词，仅展示简介、关键词与去重署名说明', async ({ page }) => {
+  const twinTails = archivedSkins.find(skin => skin.id === 'twin-tails');
+  const glasses = archivedSkins.find(skin => skin.id === 'glasses');
+  const winter = archivedSkins.find(skin => skin.id === 'winter');
+
+  // 验证双马尾大肥鱼与眼镜大肥鱼详情页不暴露生图提示词且不重复 rights.note
+  for (const skin of [twinTails, glasses]) {
+    await page.getByRole('button', { name: `查看${skin.name}设定图`, exact: true }).click();
+    const detail = page.getByRole('dialog', { name: `${skin.name}设定图` });
+    await expect(detail).toBeVisible();
+    await expect(detail.locator('.detail-heading p')).toHaveText(skin.description);
+    await expect(detail.getByRole('heading', { name: '触发关键词' })).toBeVisible();
+    await expect(detail.getByRole('heading', { name: '看清这一套的细节' })).toHaveCount(0);
+    await expect(detail).not.toContainText(skin.appearance);
+    await expect(detail.locator('.keywords span')).toHaveText(skin.keywords);
+    await expect(detail.locator('.detail-credit p')).toHaveCount(1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(detail).not.toBeVisible();
+  }
+
+  // 验证即使旧数据自带 appearance 提示词，详情页也不会渲染出来，且署名与 rights.note 不同时保留两行
+  await page.getByRole('button', { name: '查看冬装大肥鱼设定图', exact: true }).click();
+  const winterDetail = page.getByRole('dialog', { name: '冬装大肥鱼设定图' });
+  await expect(winterDetail).toBeVisible();
+  await expect(winterDetail.getByRole('heading', { name: '触发关键词' })).toBeVisible();
+  await expect(winterDetail.getByRole('heading', { name: '看清这一套的细节' })).toHaveCount(0);
+  await expect(winterDetail).not.toContainText(winter.appearance);
+  await expect(winterDetail.locator('.detail-credit p')).toHaveCount(2);
+  await page.keyboard.press('Escape');
+});
+
 test('通过选题点选完成投稿并生成安全的GitHub草稿', async ({ page }) => {
   await page.addInitScript(() => {
     window.__issues = [];
@@ -243,6 +275,13 @@ test('生成验收截图', async ({ page }, info) => {
   });
   await page.locator('.featured-skin img').evaluate(img => img.decode());
   await page.screenshot({ path: path.join(process.env.QA_DIR, `gallery-${info.project.name}.png`), fullPage: true, animations: 'disabled' });
+  await page.getByRole('button', { name: '查看双马尾大肥鱼设定图', exact: true }).click();
+  const detailDialog = page.getByRole('dialog', { name: '双马尾大肥鱼设定图' });
+  await expect(detailDialog).toBeVisible();
+  await detailDialog.locator('.detail-image img').evaluate(img => img.decode());
+  await page.screenshot({ path: path.join(process.env.QA_DIR, `detail-twin-tails-${info.project.name}.png`), fullPage: false, animations: 'disabled' });
+  await page.keyboard.press('Escape');
+  await expect(detailDialog).not.toBeVisible();
   await page.getByRole('button', { name: '投稿我的皮肤', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '皮肤投稿', exact: true });
   await page.screenshot({ path: path.join(process.env.QA_DIR, `submission-idle-${info.project.name}.png`), fullPage: false, animations: 'disabled' });

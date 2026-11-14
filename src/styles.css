@@ -472,7 +472,7 @@ h1, h2, h3, p { margin: 0; }
 .detail-image { background: #fff; border: 1px solid #e1e8f8; border-radius: 16px; padding: 14px; margin-bottom: 22px; }
 .detail-image img { max-height: 49vh; width: 100%; object-fit: contain; }
 .detail-dialog .view-labels { margin: -7px 0 25px; }
-.detail-body { display: grid; grid-template-columns: 1.2fr 1fr; gap: 36px; }
+.detail-body { display: grid; grid-template-columns: minmax(200px, .82fr) minmax(0, 1.38fr); gap: 36px; align-items: start; }
 .detail-body h3, .guide-grid h3 { font-size: 16px; margin-bottom: 9px; }
 .detail-body p, .guide-grid p { font-size: 14px; color: var(--muted); line-height: 1.8; }
 .keywords { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
