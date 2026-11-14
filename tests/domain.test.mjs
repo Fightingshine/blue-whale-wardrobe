@@ -83,7 +83,7 @@ test('设计说明和素材来源均可留空选填并直接通过校验', () =>
   };
   assert.equal(validateSubmission(minimal, image), '');
   const data = submissionData(minimal, image);
-  assert.equal(data.description, '大肥鱼卖萌');
+  assert.equal(data.description, '大肥鱼摇摇小鲸尾，眨着蓝眼睛求夸夸～');
   assert.ok(data.attribution.length > 0);
   const md = submissionMarkdown(data);
   assert.match(md, /未额外填写/u);

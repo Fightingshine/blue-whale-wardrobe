@@ -1,10 +1,11 @@
 export const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
 
-export const DEFAULT_SKIN_DESCRIPTION = '大肥鱼卖萌';
+export const DEFAULT_SKIN_DESCRIPTION = '大肥鱼摇摇小鲸尾，眨着蓝眼睛求夸夸～';
 
 export const LEGACY_EMPTY_DESCRIPTIONS = new Set([
   '未单独填写设计说明，详见三视图原图。',
   '社区共创投稿的三视图皮肤，详见展示细节。',
+  '大肥鱼卖萌',
 ]);
 
 export function cleanText(value, max = 500) {
