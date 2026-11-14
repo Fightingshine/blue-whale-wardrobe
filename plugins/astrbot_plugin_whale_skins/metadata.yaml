@@ -1,6 +1,6 @@
 name: astrbot_plugin_whale_skins
 display_name: 大肥鱼皮肤库
-desc: 管理皮肤启用、关键词与日报轮换，自动同步网站审核通过的三视图，保留默认原装和连续禁抽。
+desc: 管理皮肤启用、关键词与日报轮换，自动同步网站审核通过的设定图，保留默认原装和连续禁抽。
 version: v0.1.0
 author: Fightingshine
 astrbot_version: ">=4.29.1"

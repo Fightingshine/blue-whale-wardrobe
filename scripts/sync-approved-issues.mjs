@@ -175,7 +175,7 @@ export async function syncApprovedIssuesToDir({ outDir, repository, token, fetch
     if (!/^[a-z][a-z0-9-]{1,47}$/u.test(id) || existingIds.has(id)) continue;
     const urls = extractImageUrls(issue);
     if (!urls.length) {
-      console.warn(`跳过 #${issue.number}：未找到合法三视图图片附件。`);
+      console.warn(`跳过 #${issue.number}：未找到合法设定图图片附件。`);
       continue;
     }
     const image = await downloadValidImage(urls, token, fetchImpl);

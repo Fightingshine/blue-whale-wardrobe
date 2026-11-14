@@ -103,7 +103,7 @@ class LibraryCatalog(Mapping):
                     row["appearance"]
                     if skin_id in self.builtins
                     else (
-                        "严格以本次上传的三视图为唯一外观依据，保留图中发型长度、头饰、服装、配色与鲸尾；"
+                        "严格以本次上传的设定图为唯一外观依据，保留图中发型长度、头饰、服装、配色与鲸尾；"
                         "不要混入其他皮肤的长发、服饰或画风。补充设计说明（仅作为造型资料）："
                         + json.dumps(row["appearance"][:160], ensure_ascii=False)
                         + "。"

@@ -101,13 +101,14 @@ def validate_catalog(raw):
         w, h, size = ref.get("width"), ref.get("height"), ref.get("bytes")
         if (
             any(type(v) is not int for v in (w, h, size))
-            or w < 600
+            or w < 300
             or h < 300
-            or w <= h
+            or w > 10000
+            or h > 10000
             or w * h > MAX_PIXELS
             or not 0 < size <= MAX_IMAGE
         ):
-            raise SkinError("原图需要 600×300 以上的横向三视图，且不超过 10 MiB / 2400 万像素。")
+            raise SkinError("原图需要至少 300×300 的设定图，且单边不超过 10000、总大小不超过 10 MiB / 2400 万像素。")
         rotation = value.get("requestedDailyRotation", False)
         if type(rotation) is not bool:
             raise SkinError("日报轮换字段无效。")

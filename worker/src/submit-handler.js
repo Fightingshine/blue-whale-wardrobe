@@ -125,7 +125,7 @@ async function ensureSubmissionsBranch({ repo, branch, token, fetchImpl }) {
           path: 'README.md',
           mode: '100644',
           type: 'blob',
-          content: '# 皮肤投稿暂存分支\n\n此分支仅用于暂存网页直传投稿的三视图原图，与主分支源码相互独立。\n',
+          content: '# 皮肤投稿暂存分支\n\n此分支仅用于暂存网页直传投稿的设定图原图，与主分支源码相互独立。\n',
         },
       ],
     }),
@@ -162,7 +162,7 @@ async function parseAndValidateSubmission(formData) {
 
   const file = formData.get('image');
   if (!file || typeof file.arrayBuffer !== 'function') {
-    return { error: '请先选择一张三视图原图后再提交。' };
+    return { error: '请先选择一张设定图原图后再提交。' };
   }
   if (file.size > MAX_UPLOAD_BYTES || file.size < 24) {
     return { error: '图片需为有效文件，且大小不超过 10 MB。' };

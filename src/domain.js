@@ -82,12 +82,12 @@ export const DESIGN_DETAIL_OPTIONS = [
   { id: 'ears-tail', label: '鲸鳍耳与蓝白鲸尾' },
   { id: 'ahoge-eyes', label: '弯呆毛与蓝眼睛' },
   { id: 'ocean-trim', label: '海浪 / 贝壳小饰品' },
-  { id: 'matching-trim', label: '正侧背配饰一致' },
+  { id: 'matching-trim', label: '服装与配饰细节统一' },
 ];
 
 export const SOURCE_TYPE_OPTIONS = [
   { id: 'original', label: '原创绘制', note: '自己手绘或从零设计的穿搭', summary: '创作者原创设计绘制' },
-  { id: 'remix', label: '原图改绘', note: '基于原有大肥鱼三视图换衣配色', summary: '基于大肥鱼原有设定图二创改绘' },
+  { id: 'remix', label: '原图改绘', note: '基于原有大肥鱼设定图换衣配色', summary: '基于大肥鱼原有设定图二创改绘' },
   { id: 'ai', label: 'AI 辅助设计', note: '借助生图工具生成并经人工整理', summary: 'AI 辅助生成并经人工整理微调' },
   { id: 'authorized', label: '授权代投', note: '已获原作者同意并代为分享投稿', summary: '已获原作者授权并代为分享' },
 ];
@@ -127,7 +127,7 @@ export function composeAttribution(form = {}) {
 }
 
 export function validateSubmission(form = {}, image) {
-  if (!image) return '请先选择一张包含正面、侧面、背面的三视图图片。';
+  if (!image) return '请先选择一张大肥鱼设定图（立绘、多视图或细节设定均可）。';
   if (!cleanText(form.name, 40)) return '给这套新衣起个皮肤名称吧。';
   if (!cleanText(form.author, 40)) return '写上你想展示在图鉴里的作者昵称吧。';
   const keywords = keywordsFrom(form.keywords);
@@ -176,14 +176,14 @@ export function submissionData(form, image) {
 }
 
 export function submissionMarkdown(data, options = {}) {
-  const styles = data.designTopics?.styles?.join('、') || (data.designTopics?.note ? '见补充想法' : '未额外填写（见三视图原图）');
+  const styles = data.designTopics?.styles?.join('、') || (data.designTopics?.note ? '见补充想法' : '未额外填写（见设定图原图）');
   const sourceType = data.sourceTopics?.type || (data.sourceTopics?.note ? '见补充备注' : '未额外填写（可在 Issue 中补充）');
   const usages = data.sourceTopics?.usages?.join('、') || '未额外勾选';
   const safeName = data.name.replace(/[\r\n]/gu, ' ');
   const imageUrl = typeof options.imageUrl === 'string' && options.imageUrl.startsWith('https://') ? options.imageUrl : '';
   const imageSection = imageUrl
-    ? `![${safeName} 三视图原图](${imageUrl})\n\n> 该投稿通过网页直接上传提交，原图已校验并暂存；维护者审核确认后打上 \`已收录\` 标签即可自动发布至图鉴。`
-    : `**最后一步：把刚才选择的三视图原图拖到下方，等图片上传完成后点提交就好啦！**\n\n【在这里附上图片】`;
+    ? `![${safeName} 设定图原图](${imageUrl})\n\n> 该投稿通过网页直接上传提交，原图已校验并暂存；维护者审核确认后打上 \`已收录\` 标签即可自动发布至图鉴。`
+    : `**最后一步：把刚才选择的设定图原图拖到下方，等图片上传完成后点提交就好啦！**\n\n【在这里附上图片】`;
   return `<!-- whale-skin-submission:v1 -->
 ## 皮肤投稿：${safeName}
 
@@ -206,7 +206,7 @@ ${JSON.stringify(data, null, 2)}
 
 </details>
 
-- [x] 同意将这套三视图公开投稿至 GitHub，原图版权归创作者所有。`;
+- [x] 同意将这套设定图公开投稿至 GitHub，原图版权归创作者所有。`;
 }
 
 export function issueUrl(repositoryUrl, data) {
@@ -217,9 +217,22 @@ export function issueUrl(repositoryUrl, data) {
   url.searchParams.set('body', submissionMarkdown(data));
   url.searchParams.set('labels', '皮肤投稿');
   if (url.href.length > 7500) {
-    url.searchParams.set('body', `## 皮肤投稿：${data.name}\n\n文字资料较长，请把网页中复制好的完整投稿说明粘贴到这里，再拖入三视图原图就完成啦。`);
+    url.searchParams.set('body', `## 皮肤投稿：${data.name}\n\n文字资料较长，请把网页中复制好的完整投稿说明粘贴到这里，再拖入设定图原图就完成啦。`);
   }
   return url.href;
+}
+
+/**
+ * Checks image pixel bounds for any design sheet orientation (>= 300x300,
+ * <= 10000 per side, and total pixels within maxPixels).
+ */
+export function assertImageDimensions(width, height, maxPixels = 24_000_000) {
+  if (width < 1 || height < 1 || width > 10000 || height > 10000 || width * height > maxPixels) {
+    throw new Error('图片分辨率过高，建议控制在 2400 万像素以内。');
+  }
+  if (width < 300 || height < 300) {
+    throw new Error('设定图尺寸需至少 300 × 300 像素（横图、竖图、方图均可）。');
+  }
 }
 
 export function validateImageBuffer(bytes, { maxUploadBytes = 10 * 1024 * 1024, maxPixels = 24_000_000, mimeType = '' } = {}) {
@@ -238,12 +251,7 @@ export function validateImageBuffer(bytes, { maxUploadBytes = 10 * 1024 * 1024, 
     throw new Error('暂仅支持 PNG、JPG 或 WebP 图片（不支持 SVG、GIF 或压缩包）。');
   }
   const header = imageDimensions(b);
-  if (header.width < 1 || header.height < 1 || header.width > 10000 || header.height > 10000 || header.width * header.height > maxPixels) {
-    throw new Error('图片分辨率过高，建议控制在 2400 万像素以内。');
-  }
-  if (header.width < 600 || header.height < 300 || header.width < header.height) {
-    throw new Error('三视图需要是横向拼图（宽大于高，且至少 600 × 300 像素）。');
-  }
+  assertImageDimensions(header.width, header.height, maxPixels);
   return { mimeType: actualType, width: header.width, height: header.height, bytes: b.length };
 }
 
@@ -255,8 +263,7 @@ export async function readLocalImage(file, limits) {
   const bitmap = await createImageBitmap(file).catch(() => { throw new Error('这张图片暂时无法读取，可以重新导出 PNG 或 JPG 再试一次。'); });
   const { width, height } = bitmap;
   bitmap.close();
-  if (width > 10000 || height > 10000 || width * height > limits.maxPixels) throw new Error('图片分辨率过高，建议控制在 2400 万像素以内。');
-  if (width < 600 || height < 300 || width < height) throw new Error('三视图需要是横向拼图（宽大于高，且至少 600 × 300 像素）。');
+  assertImageDimensions(width, height, limits.maxPixels);
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   const sha256 = [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2,'0')).join('');
   return { name: file.name, size: file.size, width, height, sha256, url: URL.createObjectURL(file) };

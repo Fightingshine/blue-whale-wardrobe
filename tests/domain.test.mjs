@@ -62,7 +62,7 @@ test('设计说明与素材来源选题自动组合出清晰描述', () => {
   assert.match(attr, /小蓝鲸画图穿搭参考/u);
 });
 test('没有图片不能提交', () => {
-  assert.match(validateSubmission(form, null), /三视图/u);
+  assert.match(validateSubmission(form, null), /设定图/u);
 });
 test('缺少昵称不能提交', () => {
   assert.match(validateSubmission({ ...form, author: '' }, image), /昵称/u);
@@ -131,7 +131,7 @@ test('Markdown包含结构化速览且保持友好措辞', () => {
   assert.doesNotMatch(md, /触发生图扣费/u);
 });
 test('长中文投稿不会生成过长链接，改用简洁复制提示', () => {
-  const data = submissionData({ ...form, description: '三视图设计'.repeat(190), sourceNote: '公开使用范围'.repeat(60) }, image);
+  const data = submissionData({ ...form, description: '设定图设计'.repeat(190), sourceNote: '公开使用范围'.repeat(60) }, image);
   const url = issueUrl('https://github.com/Fightingshine/blue-whale-wardrobe', data);
   assert.ok(url.length < 7500);
   assert.match(new URL(url).searchParams.get('body'), /完整投稿说明/u);
@@ -153,11 +153,29 @@ test('HTML作为文本保留，渲染时由React转义而非当作标记', () =>
   assert.ok(new URL(issueUrl('https://github.com/Fightingshine/blue-whale-wardrobe', data)).searchParams.get('body').includes('"name": "<img'));
 });
 
-test('validateImageBuffer 可识别真实 PNG 并拒绝伪装格式与过小尺寸', () => {
+function withPngDimensions(sourcePng, width, height) {
+  const copy = new Uint8Array(sourcePng);
+  const view = new DataView(copy.buffer, copy.byteOffset, copy.byteLength);
+  view.setUint32(16, width);
+  view.setUint32(20, height);
+  return copy;
+}
+
+test('validateImageBuffer 支持横竖方各种设定图尺寸并拒绝伪装格式与过小尺寸', () => {
   const realPng = readFileSync(new URL('../public/skins/original/reference.png', import.meta.url));
   const ok = validateImageBuffer(realPng, { mimeType: 'image/png' });
   assert.equal(ok.width, 2048);
   assert.equal(ok.height, 1143);
+
+  const portrait = validateImageBuffer(withPngDimensions(realPng, 600, 900), { mimeType: 'image/png' });
+  assert.deepEqual({ width: portrait.width, height: portrait.height }, { width: 600, height: 900 });
+
+  const square = validateImageBuffer(withPngDimensions(realPng, 300, 300), { mimeType: 'image/png' });
+  assert.deepEqual({ width: square.width, height: square.height }, { width: 300, height: 300 });
+
+  assert.throws(() => validateImageBuffer(withPngDimensions(realPng, 299, 900), { mimeType: 'image/png' }), /至少 300 × 300/u);
+  assert.throws(() => validateImageBuffer(withPngDimensions(realPng, 600, 299), { mimeType: 'image/png' }), /至少 300 × 300/u);
+  assert.throws(() => validateImageBuffer(withPngDimensions(realPng, 4000, 7000), { mimeType: 'image/png' }), /2400 万像素/u);
   assert.throws(() => validateImageBuffer(new TextEncoder().encode('<svg/>'), { mimeType: 'image/svg+xml' }), /不支持 SVG/u);
   assert.throws(() => validateImageBuffer(new Uint8Array(64), { mimeType: 'image/png' }), /格式不一致/u);
 });
@@ -165,7 +183,7 @@ test('validateImageBuffer 可识别真实 PNG 并拒绝伪装格式与过小尺�
 test('submissionMarkdown 传入已上传 HTTPS 原图链接时直接嵌入预览图', () => {
   const rawUrl = 'https://raw.githubusercontent.com/Fightingshine/blue-whale-wardrobe/abc123/submissions/202611/ref/reference.png';
   const md = submissionMarkdown(submissionData(form, image), { imageUrl: rawUrl });
-  assert.ok(md.includes(`![学院风大肥鱼 三视图原图](${rawUrl})`));
+  assert.ok(md.includes(`![学院风大肥鱼 设定图原图](${rawUrl})`));
   assert.doesNotMatch(md, /【在这里附上图片】/u);
   assert.ok(md.includes('"schema": "whale-skin-submission/v1"'));
 });
