@@ -118,7 +118,16 @@ test('完整直传可初始化 submissions 分支、上传原图并创建兼容�
       return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
     }
     if (target.endsWith('/git/trees')) {
-      return new Response(JSON.stringify({ sha: 'tree_empty_sha' }), { status: 201 });
+      const body = JSON.parse(init.body);
+      // GitHub REST API rejects an empty tree array with HTTP 422 "Invalid tree info".
+      if (!Array.isArray(body.tree) || body.tree.length === 0) {
+        return new Response(JSON.stringify({ message: 'Invalid tree info' }), { status: 422 });
+      }
+      assert.equal(body.tree[0].path, 'README.md');
+      assert.equal(body.tree[0].mode, '100644');
+      assert.equal(body.tree[0].type, 'blob');
+      assert.ok(typeof body.tree[0].content === 'string' && body.tree[0].content.length > 0);
+      return new Response(JSON.stringify({ sha: 'tree_init_sha' }), { status: 201 });
     }
     if (target.endsWith('/git/commits')) {
       return new Response(JSON.stringify({ sha: 'init_commit_sha' }), { status: 201 });

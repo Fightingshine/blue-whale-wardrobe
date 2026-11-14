@@ -115,11 +115,20 @@ async function ensureSubmissionsBranch({ repo, branch, token, fetchImpl }) {
     throw new Error(`检查投稿暂存分支失败（HTTP ${existing.status}）。`);
   }
 
-  // Create an isolated orphan branch from an empty tree so main branch source stays untouched.
+  // Create an isolated orphan branch with an initial README so GitHub's git/trees API accepts the root tree.
   const treeRes = await fetchImpl(`https://api.github.com/repos/${repo}/git/trees`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ tree: [] }),
+    body: JSON.stringify({
+      tree: [
+        {
+          path: 'README.md',
+          mode: '100644',
+          type: 'blob',
+          content: '# 皮肤投稿暂存分支\n\n此分支仅用于暂存网页直传投稿的三视图原图，与主分支源码相互独立。\n',
+        },
+      ],
+    }),
   });
   if (!treeRes.ok) throw new Error(`初始化暂存目录树失败（HTTP ${treeRes.status}）。`);
   const { sha: treeSha } = await treeRes.json();
