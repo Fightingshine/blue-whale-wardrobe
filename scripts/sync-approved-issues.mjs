@@ -1,7 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { DEFAULT_SKIN_DESCRIPTION, LEGACY_EMPTY_DESCRIPTIONS, cleanText, imageDimensions, keywordsFrom, sniffImage } from '../src/domain.js';
+import { cleanText, displayDescription, imageDimensions, keywordsFrom, sniffImage } from '../src/domain.js';
 import { sha256, validateCatalog, validateSkin } from './catalog.mjs';
 
 const ALLOWED_IMAGE_HOSTS = new Set([
@@ -96,10 +96,7 @@ export function parseIssueMetadata(issue = {}) {
   const keywords = (rawKeywords.length ? rawKeywords : [cleanText(name, 20) || '共创皮肤']).slice(0, 8);
 
   const sectionDesc = cleanText(readSection(issue.body, /^设计说明/u), 1000);
-  const rawDescription = cleanText(json?.description || sectionDesc, 1500);
-  const description = !rawDescription || LEGACY_EMPTY_DESCRIPTIONS.has(rawDescription)
-    ? DEFAULT_SKIN_DESCRIPTION
-    : rawDescription;
+  const description = displayDescription(json?.description || sectionDesc);
 
   const sectionAttr = cleanText(readSection(issue.body, /^素材来源/u), 400);
   const note = cleanText(json?.attribution || sectionAttr || `GitHub 共创投稿（Issue #${issue.number}）`, 450);

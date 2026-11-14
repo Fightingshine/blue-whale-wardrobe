@@ -30,7 +30,7 @@ test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({
     const res = await route.fetch();
     const data = await res.json();
     const extra1 = { ...data.skins[0], id: 'issue-21', name: '海盐水手大肥鱼', category: 'community', categoryLabel: '共创', issueUrl: 'https://github.com/Fightingshine/blue-whale-wardrobe/issues/21' };
-    const extra2 = { ...data.skins[1], id: 'issue-22', name: '春日樱花大肥鱼', category: 'community', categoryLabel: '共创' };
+    const extra2 = { ...data.skins[1], id: 'issue-22', name: '春日樱花大肥鱼', category: 'community', categoryLabel: '共创', description: '', appearance: '' };
     await route.fulfill({ json: { ...data, skins: [...data.skins, extra1, extra2] } });
   });
   await page.reload();
@@ -38,6 +38,13 @@ test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({
   await expect(page.getByText(/已收录 6 套/u)).toBeVisible();
   await page.getByRole('button', { name: '共创', exact: true }).click();
   await expect(page.locator('.skin-card')).toHaveCount(2);
+  const emptyCard = page.locator('.skin-card', { hasText: '春日樱花大肥鱼' });
+  await expect(emptyCard.locator('.card-caption p')).toHaveCount(0);
+  await emptyCard.getByRole('button', { name: '查看春日樱花大肥鱼三视图', exact: true }).click();
+  const emptyDetail = page.getByRole('dialog', { name: '春日樱花大肥鱼三视图' });
+  await expect(emptyDetail.locator('.detail-heading p')).toHaveCount(0);
+  await expect(emptyDetail.getByRole('heading', { name: '触发关键词' })).toBeVisible();
+  await page.keyboard.press('Escape');
   expect(errors).toEqual([]);
 });
 

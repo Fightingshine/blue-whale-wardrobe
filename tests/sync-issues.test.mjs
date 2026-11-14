@@ -65,14 +65,14 @@ ${JSON.stringify({
   assert.deepEqual(parsed.keywords, ['春游', '樱花风']);
 
   const emptyManual = parseIssueMetadata({ number: 14, title: '[皮肤投稿] 卖萌大肥鱼', user: { login: 'u1' }, body: '## 皮肤名称\n卖萌大肥鱼' });
-  assert.equal(emptyManual.description, '大肥鱼摇摇小鲸尾，眨着蓝眼睛求夸夸～');
+  assert.equal(emptyManual.description, '');
 
   const legacyEmptyJson = parseIssueMetadata({
     number: 15,
     title: '[皮肤投稿] 短发大肥鱼',
     body: `\`\`\`json\n${JSON.stringify({ name: '短发大肥鱼', author: 'fighting', keywords: ['短发'], description: '未单独填写设计说明，详见三视图原图。' })}\n\`\`\``,
   });
-  assert.equal(legacyEmptyJson.description, '大肥鱼摇摇小鲸尾，眨着蓝眼睛求夸夸～');
+  assert.equal(legacyEmptyJson.description, '');
 });
 
 test('拉取已收录 Issue 支持跨页不限数量并过滤 Pull Request', async () => {

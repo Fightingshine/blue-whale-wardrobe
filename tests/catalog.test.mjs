@@ -18,6 +18,12 @@ test('拒绝参考图路径穿越',()=>{const skin=structuredClone(catalog.skins
 test('拒绝缺少图像权利说明',()=>{const skin=structuredClone(catalog.skins[0]);delete skin.rights;assert.throws(()=>validateSkin(skin,publicRoot));});
 test('拒绝未经审核的皮肤进入公开图鉴',()=>{const skin=structuredClone(catalog.skins[0]);skin.status='pending';assert.throws(()=>validateSkin(skin,publicRoot));});
 test('拒绝原图SHA不匹配',()=>{const skin=structuredClone(catalog.skins[0]);skin.reference.sha256='0'.repeat(64);assert.throws(()=>validateSkin(skin,publicRoot));});
+test('允许未填写设计说明和细节描述的皮肤通过目录校验',()=>{
+  const skin=structuredClone(catalog.skins[0]);
+  skin.description='';
+  skin.appearance='';
+  assert.equal(validateSkin(skin,publicRoot),true);
+});
 test('维护者收录工具可导入临时皮肤且拒绝覆盖现有ID',()=>{
   const temp=mkdtempSync(path.join(tmpdir(),'wardrobe-import-'));
   try{

@@ -361,6 +361,8 @@ h1, h2, h3, p { margin: 0; }
   gap: 18px;
 }
 .skin-card {
+  display: flex;
+  flex-direction: column;
   border: 1px solid #c4d3f1;
   border-radius: 16px;
   overflow: hidden;
@@ -372,7 +374,7 @@ h1, h2, h3, p { margin: 0; }
   box-shadow: 0 7px 25px #5473bc12;
 }
 .card-art { height: 198px; margin: 10px 7px 0; width: calc(100% - 14px); }
-.card-caption { padding: 12px 22px 19px; }
+.card-caption { flex: 1; display: flex; flex-direction: column; padding: 12px 22px 19px; }
 .card-caption h3 { font-size: 21px; line-height: 1.5; margin-bottom: 4px; }
 .card-caption p {
   font-size: 14px;
@@ -385,6 +387,8 @@ h1, h2, h3, p { margin: 0; }
   overflow: hidden;
 }
 .card-link {
+  align-self: flex-start;
+  margin-top: auto;
   display: flex;
   gap: 6px;
   align-items: center;
