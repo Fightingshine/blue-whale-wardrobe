@@ -1,0 +1,27 @@
+{
+  "id": "glasses",
+  "name": "眼镜大肥鱼",
+  "category": "community",
+  "categoryLabel": "共创",
+  "status": "approved",
+  "keywords": [
+    "眼镜",
+    "眼镜皮肤"
+  ],
+  "description": "必须保留细圆框眼镜、蓝眼、深蓝渐浅蓝的自然披散长发、弯呆毛、蓝蝴蝶结、白褶皱女仆发箍、蓝白侧鳍、深蓝金边女仆裙、白鲸鱼围裙和鲸尾；不改成双马尾。以本设定图锁定角色和画风，表情动作道具随场景变化，不复制设定页的小窗或素材拼贴。",
+  "appearance": "必须保留细圆框眼镜、蓝眼、深蓝渐浅蓝的自然披散长发、弯呆毛、蓝蝴蝶结、白褶皱女仆发箍、蓝白侧鳍、深蓝金边女仆裙、白鲸鱼围裙和鲸尾；不改成双马尾。以本设定图锁定角色和画风，表情动作道具随场景变化，不复制设定页的小窗或素材拼贴。",
+  "attribution": "Fightingshine（维护者提交）；维护者提供并按要求收录的角色设定图，供大肥鱼衣橱公开展示和机器人参考生图使用。图片及角色相关权利归相应权利人；代码 MIT 许可不适用于图片，不扩大商业使用或再许可范围。",
+  "legacy": false,
+  "rights": {
+    "license": "LicenseRef-Asset-Rights-Reserved",
+    "note": "维护者提供并按要求收录的角色设定图，供大肥鱼衣橱公开展示和机器人参考生图使用。图片及角色相关权利归相应权利人；代码 MIT 许可不适用于图片，不扩大商业使用或再许可范围。"
+  },
+  "requestedDailyRotation": true,
+  "reference": {
+    "path": "skins/glasses/reference.png",
+    "sha256": "630407b684ecfb3960c4c23e42632436c38fca7c6f7339adda820eed71953b4c",
+    "width": 1086,
+    "height": 1448,
+    "bytes": 2669613
+  }
+}

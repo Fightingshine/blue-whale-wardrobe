@@ -1,0 +1,27 @@
+{
+  "id": "twin-tails",
+  "name": "双马尾大肥鱼",
+  "category": "community",
+  "categoryLabel": "共创",
+  "status": "approved",
+  "keywords": [
+    "双马尾",
+    "双马尾皮肤"
+  ],
+  "description": "深蓝至浅蓝渐变的高位卷曲双马尾，两侧蓝蝴蝶结；保留蓝眼、白褶皱女仆发箍、蓝白侧鳍、深蓝金边女仆裙、白鲸鱼围裙和鲸尾。后脑头发收拢到两个扎点，两束马尾分开垂落；不画成整片披发，不添加眼镜。以本设定图的角色与画风为准。",
+  "appearance": "深蓝至浅蓝渐变的高位卷曲双马尾，两侧蓝蝴蝶结；保留蓝眼、白褶皱女仆发箍、蓝白侧鳍、深蓝金边女仆裙、白鲸鱼围裙和鲸尾。后脑头发收拢到两个扎点，两束马尾分开垂落；不画成整片披发，不添加眼镜。以本设定图的角色与画风为准。",
+  "attribution": "Fightingshine（维护者提交）；维护者提供并按要求收录的角色设定图，供大肥鱼衣橱公开展示和机器人参考生图使用。图片及角色相关权利归相应权利人；代码 MIT 许可不适用于图片，不扩大商业使用或再许可范围。",
+  "legacy": false,
+  "rights": {
+    "license": "LicenseRef-Asset-Rights-Reserved",
+    "note": "维护者提供并按要求收录的角色设定图，供大肥鱼衣橱公开展示和机器人参考生图使用。图片及角色相关权利归相应权利人；代码 MIT 许可不适用于图片，不扩大商业使用或再许可范围。"
+  },
+  "requestedDailyRotation": true,
+  "reference": {
+    "path": "skins/twin-tails/reference.png",
+    "sha256": "7326dcca3762ad73e99a259b258e29102964021e99ca72f7fede174944555642",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1935533
+  }
+}

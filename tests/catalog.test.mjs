@@ -11,7 +11,10 @@ const root=fileURLToPath(new URL('../',import.meta.url));
 const publicRoot=path.join(root,'public');
 const catalog=JSON.parse(readFileSync(path.join(publicRoot,'skins/catalog.json'),'utf8'));
 
-test('所有历史原图哈希和尺寸通过',()=>{assert.equal(validateCatalog(catalog,publicRoot),4);});
+test('全部归档原图哈希和尺寸通过且四套历史皮肤保留',()=>{
+  assert.equal(validateCatalog(catalog,publicRoot),catalog.skins.length);
+  assert.deepEqual(catalog.skins.filter(skin=>skin.legacy).map(skin=>skin.id).sort(),['original','pixel','sweater','winter']);
+});
 test('拒绝重复皮肤ID',()=>{assert.throws(()=>validateCatalog({...catalog,skins:[...catalog.skins,catalog.skins[0]]},publicRoot));});
 test('拒绝远程参考图',()=>{const skin=structuredClone(catalog.skins[0]);skin.reference.path='https://example.com/reference.png';assert.throws(()=>validateSkin(skin,publicRoot));});
 test('拒绝参考图路径穿越',()=>{const skin=structuredClone(catalog.skins[0]);skin.reference.path='../private.json';assert.throws(()=>validateSkin(skin,publicRoot));});
@@ -39,9 +42,9 @@ test('维护者收录工具可导入临时皮肤且拒绝覆盖现有ID',()=>{
     const imported=spawnSync(process.execPath,args,{encoding:'utf8'});
     assert.equal(imported.status,0,imported.stderr);
     const added=JSON.parse(readFileSync(path.join(temp,'public/skins/catalog.json'),'utf8'));
-    assert.equal(added.skins.length,5);assert.equal(added.skins.at(-1).status,'approved');
-    assert.equal(validateCatalog(added,path.join(temp,'public')),5);
+    assert.equal(added.skins.length,catalog.skins.length+1);assert.equal(added.skins.at(-1).status,'approved');
+    assert.equal(validateCatalog(added,path.join(temp,'public')),catalog.skins.length+1);
     const duplicate=spawnSync(process.execPath,args,{encoding:'utf8'});assert.notEqual(duplicate.status,0);
-    assert.equal(JSON.parse(readFileSync(path.join(temp,'public/skins/catalog.json'),'utf8')).skins.length,5);
+    assert.equal(JSON.parse(readFileSync(path.join(temp,'public/skins/catalog.json'),'utf8')).skins.length,catalog.skins.length+1);
   }finally{rmSync(temp,{recursive:true,force:true});}
 });

@@ -16,6 +16,7 @@ import { validateCatalog } from '../scripts/catalog.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const publicRoot = path.join(root, 'public');
+const archivedCount = JSON.parse(readFileSync(path.join(publicRoot, 'skins/catalog.json'), 'utf8')).skins.length;
 const pngBytes = readFileSync(path.join(publicRoot, 'skins/original/reference.png'));
 const jpgBytes = readFileSync(path.join(publicRoot, 'skins/winter/reference.jpg'));
 
@@ -133,13 +134,13 @@ test('打上「已收录」标签的投稿自动同步进构建目录且无数�
     const result = await syncApprovedIssuesToDir({ outDir: temp, repository: 'Fightingshine/blue-whale-wardrobe', fetchImpl: mockFetch });
     assert.equal(result.checked, 3);
     assert.equal(result.added, 2);
-    assert.equal(result.total, 6);
+    assert.equal(result.total, archivedCount + 2);
 
     const catalog = JSON.parse(readFileSync(path.join(temp, 'skins/catalog.json'), 'utf8'));
-    assert.equal(catalog.skins.length, 6);
-    assert.equal(validateCatalog(catalog, temp), 6);
-    assert.equal(catalog.skins[4].categoryLabel, '共创');
-    assert.equal(catalog.skins[5].name, '原装大肥鱼 (#22)');
+    assert.equal(catalog.skins.length, archivedCount + 2);
+    assert.equal(validateCatalog(catalog, temp), archivedCount + 2);
+    assert.equal(catalog.skins[archivedCount].categoryLabel, '共创');
+    assert.equal(catalog.skins[archivedCount + 1].name, '原装大肥鱼 (#22)');
   } finally {
     rmSync(temp, { recursive: true, force: true });
   }
