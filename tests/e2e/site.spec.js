@@ -5,6 +5,8 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 
 const reference = fileURLToPath(new URL('../../public/skins/original/reference.png', import.meta.url));
+const archivedSkins = JSON.parse(fs.readFileSync(new URL('../../public/skins/catalog.json', import.meta.url), 'utf8')).skins;
+const archivedCount = archivedSkins.length;
 
 function crc32(buf) {
   let crc = 0xffffffff;
@@ -48,8 +50,8 @@ test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
   await expect(page).toHaveTitle(/大肥鱼衣橱/u);
-  await expect(page.locator('.skin-card')).toHaveCount(4);
-  await expect(page.getByText(/已收录 4 套/u)).toBeVisible();
+  await expect(page.locator('.skin-card')).toHaveCount(archivedCount);
+  await expect(page.locator('.wardrobe-count')).toHaveText(`已收录 ${archivedCount} 套 · 持续收录中`);
   await page.getByRole('searchbox', { name: '搜索皮肤' }).fill('针织装');
   await expect(page.locator('.skin-card')).toHaveCount(1);
   await expect(page.locator('.skin-card h3')).toHaveText('毛衣大肥鱼');
@@ -59,7 +61,7 @@ test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({
   await page.getByRole('button', { name: '像素', exact: true }).click();
   await expect(page.locator('.skin-card h3')).toHaveText('像素风大肥鱼');
 
-  // 验证超过 4 套（如新投稿已收录共创皮肤）时全部显示且无数量限制
+  // 验证增加两套已收录共创皮肤后仍全部显示，无固定数量上限。
   await page.route('**/skins/catalog.json', async route => {
     const res = await route.fetch();
     const data = await res.json();
@@ -68,10 +70,10 @@ test('图鉴加载、筛选、多套扩展无上限与真实空结果', async ({
     await route.fulfill({ json: { ...data, skins: [...data.skins, extra1, extra2] } });
   });
   await page.reload();
-  await expect(page.locator('.skin-card')).toHaveCount(6);
-  await expect(page.getByText(/已收录 6 套/u)).toBeVisible();
+  await expect(page.locator('.skin-card')).toHaveCount(archivedCount + 2);
+  await expect(page.locator('.wardrobe-count')).toHaveText(`已收录 ${archivedCount + 2} 套 · 持续收录中`);
   await page.getByRole('button', { name: '共创', exact: true }).click();
-  await expect(page.locator('.skin-card')).toHaveCount(2);
+  await expect(page.locator('.skin-card')).toHaveCount(archivedSkins.filter(skin => skin.category === 'community').length + 2);
   const emptyCard = page.locator('.skin-card', { hasText: '春日樱花大肥鱼' });
   await expect(emptyCard.locator('.card-caption p')).toHaveCount(0);
   await emptyCard.getByRole('button', { name: '查看春日樱花大肥鱼设定图', exact: true }).click();
@@ -355,7 +357,7 @@ test('目录请求声明 cache: no-cache 以避免浏览器命中 GitHub Pages �
     };
   });
   await page.goto('/');
-  await expect(page.locator('.skin-card')).toHaveCount(4);
+  await expect(page.locator('.skin-card')).toHaveCount(archivedCount);
   const calls = await page.evaluate(() => window.__catalogFetchCalls);
   expect(calls.length).toBeGreaterThan(0);
   expect(calls.every(call => call.cache === 'no-cache')).toBe(true);

@@ -34,7 +34,7 @@ const form = {
 };
 
 test('目录中四套历史皮肤可搜索', () => {
-  assert.equal(catalog.skins.length, 4);
+  assert.equal(catalog.skins.filter(skin => skin.legacy).length, 4);
   assert.equal(filterSkins(catalog.skins, '冬装', 'all')[0].id, 'winter');
 });
 test('名称、描述、关键词都能搜索', () => {

@@ -21,9 +21,9 @@
 
 ---
 
-## 仓库内置基础皮肤
+## 仓库归档皮肤
 
-仓库 `public/skins/` 内置了 4 套保留原始字节、尺寸与 SHA-256 哈希的历史参考皮肤；后续通过 Issue `已收录` 标签同步的新皮肤会在构建阶段自动合并展示。
+仓库 `public/skins/` 归档了 4 套历史参考皮肤及双马尾、眼镜两套新皮肤，均保留提交原图的字节、尺寸与 SHA-256。通过 Issue `已收录` 标签同步的其他皮肤会在构建阶段自动合并展示。
 
 | 皮肤名称 | 皮肤 ID | 风格分类 | 参考关键词 | 皮肤设定图 |
 | --- | --- | --- | --- | --- |
@@ -31,6 +31,10 @@
 | 冬装大肥鱼 | `winter` | 冬装 | `冬装`、`冬日装`、`冬季装` | [查看原图](public/skins/winter/reference.jpg) |
 | 毛衣大肥鱼 | `sweater` | 毛衣 | `毛衣`、`针织装` | [查看原图](public/skins/sweater/reference.png) |
 | 像素风大肥鱼 | `pixel` | 像素 | `像素风`、`像素画`、`像素皮肤` | [查看原图](public/skins/pixel/reference.png) |
+| 双马尾大肥鱼 | `twin-tails` | 共创 | `双马尾`、`双马尾皮肤` | [查看原图](public/skins/twin-tails/reference.png) |
+| 眼镜大肥鱼 | `glasses` | 共创 | `眼镜`、`眼镜皮肤` | [查看原图](public/skins/glasses/reference.png) |
+
+双马尾和眼镜皮肤均允许参与日报随机轮换；手动画图可用相应关键词指定。眼镜皮肤使用完整竖版设定图，图生图时保留圆框眼镜与披散长发。
 
 > 这些参考图均标记 `LicenseRef-Asset-Rights-Reserved`，代码仓库的 MIT 许可不代表角色或图片素材已开放商用或再许可，详情请查看 [ASSET_RIGHTS.md](ASSET_RIGHTS.md)。
 
