@@ -267,3 +267,22 @@ test('启用网页直传时通过人机验证免跳转提交成功并支持失�
   expect(await page.evaluate(() => window.__issues)).toHaveLength(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('目录请求声明 cache: no-cache 以避免浏览器命中 GitHub Pages 短缓存', async ({ page }) => {
+  await page.addInitScript(() => {
+    const rawFetch = window.fetch.bind(window);
+    window.__catalogFetchCalls = [];
+    window.fetch = (input, init = {}) => {
+      const url = typeof input === 'string' ? input : input?.url || '';
+      if (url.includes('skins/catalog.json')) {
+        window.__catalogFetchCalls.push({ url, cache: init?.cache ?? 'default' });
+      }
+      return rawFetch(input, init);
+    };
+  });
+  await page.goto('/');
+  await expect(page.locator('.skin-card')).toHaveCount(4);
+  const calls = await page.evaluate(() => window.__catalogFetchCalls);
+  expect(calls.length).toBeGreaterThan(0);
+  expect(calls.every(call => call.cache === 'no-cache')).toBe(true);
+});

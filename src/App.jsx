@@ -625,7 +625,7 @@ export default function App() {
 
   useEffect(() => {
     const abort = new AbortController();
-    fetch(assetUrl('skins/catalog.json'), { signal: abort.signal }).then(response => {
+    fetch(assetUrl('skins/catalog.json'), { signal: abort.signal, cache: 'no-cache' }).then(response => {
       if (!response.ok) throw new Error('皮肤目录暂时无法加载。');
       return response.json();
     }).then(data => {
